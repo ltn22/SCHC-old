@@ -180,19 +180,22 @@ while True:
     parser.parser(packet.buffer)
 
     # COMPRESSION
+    
+    # Load the parsed header fields and the payload to the compressor
+    compressor.loadFromParser(parser.header_fields, parser.payload)
 
     # Search of matching rule in the context
     print("\t## Searching matching rule in context ##")
-    compressor.analyzePacketToSend(parser.get_header_fields())
+    compressor.analyzePacketToSend()
 
     # Compression of the packet to send
     compressor.compressPacket()
 
     # Sending compressed packet
     print("\t## Sending compressed packet ##")
-    compressed_packet = compressor.returnCompressedPacket(parser.payload)
-    print("\t\t", compressed_packet)
-    lora_buffer = binascii.unhexlify(compressed_packet)
+    compressor.appendCompressedPacket()
+    print("\t\t", compressor.compressed_packet)
+    lora_buffer = binascii.unhexlify(compressor.compressed_packet)
     print("\t##############################")
 
     s.setblocking(True)
