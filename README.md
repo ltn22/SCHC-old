@@ -52,17 +52,23 @@ For every packet to be sent the following functions should be used:
 
    *parser.parser(packet)*
 
-6. Once the packet has been parsed the compressor analyses the header fields and looks for a rule that matches. Note that header fields are obtained from the parser, stored in *“parser.header_fields”*, and passed to the compressor to analyse it.
+6. Once the packet has been parsed, the values of the header fields obtained and the payload must be loaded to the compressor.
+    
+    *compressor.loadFromParser(parser.header_fields, parser.payload)*
 
-   *compressor.analyzePacketToSend(parser.header_fields)*
+7. Then the compressor analyses the header fields and looks for a rule that matches for compression.
 
-7. If a rule is found that matches for all the header fields of the packet the compression can be done following that rule. The *“compressPacket()”* function will compress the last packet analysed.
+   *compressor.analyzePacketToSend()*
+
+8. If a rule is found that matches for all the header fields of the packet the compression can be done following that rule.
 
    *compressor.compressPacket()*
 
-8. To obtain the compressed packet the function *“returnCompressedPacket(payload)”* can be called. The payload must be passed to this function, and it can be found stored in the parser in *“parser.payload”*.
+9. To obtain the compressed packet with the header fields appended and ready to be sent, the function *“returnCompressedPacket()”* can be called.
 
-   *compressed_packet = compressor.returnCompressedPacket(parser.payload)*
+   *compressor.appendCompressedPacket()*
+   
+The compressed header packet can then be accessed through the variable *"compressor.compressed_packet"*.
 
 Two more auxiliary modules were made for simulating the generation of packets that follow the basic rule proposed to be compressed. 
 To use this, the class *“packet_generation”* should be imported from the module *“packet_generator”* and the a class has to be created:
