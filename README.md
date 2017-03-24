@@ -30,8 +30,9 @@ To use this module for compression the following steps should be followed:
 
 1. Import the *“Parser”* and *“Compressor”* classes from the modules.
 
-   *from Parser import Parser*
-   *from Compressor import Compressor*
+    *from Parser import Parser*
+	
+    *from Compressor import Compressor*
 
 2. Create these classes to initialize the parser, the compressor and the packet generator.
 
@@ -66,12 +67,12 @@ For every packet to be sent the following functions should be used:
 Two more auxiliary modules were made for simulating the generation of packets that follow the basic rule proposed to be compressed. 
 To use this, the class *“packet_generation”* should be imported from the module *“packet_generator”* and the a class has to be created:
 
-      *from packet_generator import packet_generation*
-      *packet = packet_generation()*
+      from packet_generator import packet_generation
+      packet = packet_generation()
 
 It is then possible to generate IPv6/UDP/CoAP packets that follow the basic rule proposed using the following function:
 
-      *packet.generate_packet()*
+      packet.generate_packet()
 
 The generated packet will be stored in *"packet.buffer"*
 
@@ -136,7 +137,7 @@ Tackling these limitations are the next steps in making a fully functional imple
 
 # Appendix - Rule Format
 
-An example of a rule format is shown. All fields should be included in a rule for a propper compression/decompression. Note that this example of rule is for Javascript where the "targetValue" of each field is a string, for the Python code the "targetValue" should be expressed in bytes literals (b'').
+An example of a rule format is shown. All fields should be included in a rule for a propper compression/decompression. Note that this example of rule is for Javascript where the "targetValue" of each field is a string, for the Python code the "targetValue" should be expressed in bytes literals (b' ').
 
 var rule0 = {
     "IP_version": {
