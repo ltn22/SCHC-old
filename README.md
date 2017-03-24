@@ -136,7 +136,7 @@ Tackling these limitations are the next steps in making a fully functional imple
 
 # Appendix - Rule Format
 
-An example of a rule format is shown. All fields should be included in a rule for a propper compression/decompression.
+An example of a rule format is shown. All fields should be included in a rule for a propper compression/decompression. Note that this example of rule is for Javascript where the "targetValue" of each field is a string, for the Python code the "targetValue" should be expressed in bytes literals (b'').
 
 var rule0 = {
     "IP_version": {
