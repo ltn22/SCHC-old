@@ -171,7 +171,7 @@ var rule0 = {
     
     "IP_payloadLength": {
     
-        "targetValue": '',
+        "targetValue": "",
         
         "matchingOperator": "ignore",
         
@@ -213,7 +213,7 @@ var rule0 = {
     
         "targetValue": "",
         
-        "matchingOperator": "equal",
+        "matchingOperator": "ignore",
         
         "compDecompFct": "ESiid-DID",
         
@@ -262,7 +262,7 @@ var rule0 = {
     
     "UDP_length": {
     
-        "targetValue": '',
+        "targetValue": "",
         
         "matchingOperator": "ignore",
         
@@ -272,7 +272,7 @@ var rule0 = {
     
     "UDP_checksum": {
     
-        "targetValue": '',
+        "targetValue": "",
         
         "matchingOperator": "ignore",
         
@@ -332,7 +332,7 @@ var rule0 = {
     
     "CoAP_token": {
     
-        "targetValue": '',
+        "targetValue": "",
         
         "matchingOperator": "ignore",
         
