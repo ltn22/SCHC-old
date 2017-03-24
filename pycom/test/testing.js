@@ -2,6 +2,8 @@
 Created on 6 mar. 2017
 
 @author: Philippe Clavier
+
+Made for testing, cleaning and debugging 
 '''
 
 import time
@@ -123,6 +125,8 @@ print("\n\t## Elements instantiation ###")
 compressor = Compressor()
 print("\t\t Compressor (LC) A instantiated.")
 
+parser = Parser()
+
 # Rules are loaded to the Compressor
 
 compressor.addRule(rule0)
@@ -145,23 +149,25 @@ while True:
 
     # Parsing the packet to be analysed by the Compressor
     print("\n\t## Beginning of parsing ##")
-    parser = Parser()
     parser.parser(packet.buffer)
 
     # COMPRESSION
 
+    # Load the parsed header fields and the payload to the compressor
+    compressor.loadFromParser(parser.header_fields, parser.payload)
+
     # Search of matching rule in the context
     print("\t## Searching matching rule in context ##")
-    compressor.analyzePacketToSend(parser.get_header_fields())
+    compressor.analyzePacketToSend()
 
     # Compression of the packet to send
     print("\t## Compression of the packet to send ##")
     compressor.compressPacket()
 
-    # Sending compressed packet
-    print("\t## Sending compressed packet ##")
-    compressed_packet = compressor.returnCompressedPacket(parser.payload)
-    print("\t\t", compressed_packet)
+    # Append the compressed header fields into a packet to be sent
+    print("\t## Appending the compressed header fields ##")
+    compressor.appendCompressedPacket()
+    print("\t\t", compressor.compressed_packet)
     print("\t##############################")
 
     time.sleep(5)
