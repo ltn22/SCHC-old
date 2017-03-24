@@ -24,13 +24,66 @@ For this purpose the ES used was a LoPy which is able to transmit via LoRaWAN an
 
 ## Compression (ES)
 
-(ADD LIST OF POSSIBLE MO AND CDF)
+For the compression in the ES two main Python modules were developed: *“Parser.py”* and *“Compressor.py”*. These can be found in the folder *“pycom”*. 
+
+To use this module for compression the following steps should be followed:
+
+1. Import the *“Parser”* and *“Compressor”* classes from the modules.
+
+   *from Parser import Parser*
+   *from Compressor import Compressor*
+
+2. Create these classes to initialize the parser, the compressor and the packet generator.
+
+   *compressor = Compressor()*
+   *parser = Parser()*
+
+3. Define the rules following its given format. The format for Python is the following:
+4. Add the rules to be used (For the moment, the rules should be added in their correponding oreder, matching the context of the compressor in the ES).
+
+	*compressor.addRule(rule0)*
+
+Now the Compressor is all set up and ready to compress packets to be sent.
+
+For every packet to be sent the following functions should be used:   
+
+5. The packet to be sent has to be parsed first to obtain each value of the header fields before the compressor handles it.
+
+   *parser.parser(packet)*
+
+6. Once the packet has been parsed the compressor analyses the header fields and looks for a rule that matches. Note that the function *“get_header_fields()”* from the parser will return the parsed header and this one is passed to the compressor to analyse it.
+
+   *compressor.analyzePacketToSend(parser.get_header_fields())*
+
+7. If a rule is found that matches for all the header fields of the packet the compression can be done following that rule. The *“compressPacket()”* function will compress the last packet analysed.
+
+   *compressor.compressPacket()*
+
+8. To obtain the compressed packet the function *“returnCompressedPacket(payload)”* can be called. The payload must be passed to this function, and it can be found stored in the parser in *“parser.payload”*.
+
+   *compressed_packet = compressor.returnCompressedPacket(parser.payload)*
+
+Two more auxiliary modules were made for simulating the generation of packets that follow the basic rule proposed to be compressed. 
+To use this, the class *“packet_generation”* should be imported from the module *“packet_generator”* and the a class has to be created:
+
+      *from packet_generator import packet_generation*
+      *packet = packet_generation()*
+
+It is then possible to generate IPv6/UDP/CoAP packets that follow the basic rule proposed using the following function:
+
+      *packet.generate_packet()*
+
+The generated packet will be stored in *"packet.buffer"*
+
+The implementation of the compressor was done in a LoPY and the *“main.py”* shows an example of how to use this device to send previously compressed packets over LoRaWAN.
+
+The folder *“pycom\test”* contains a script called *“testing.py”* that can be used to test the compression of different packets that follow a basic rule loaded as *“rule0”*. Other rules can be added following the rule format.
 
 ## Decompression (LC)
 
-For the decompression in the LC a Javascript module was developed. This can be found in the folder “javascript\lib” with the name “schc_cd.js”.
+For the decompression in the LC a Javascript module was developed. This can be found in the folder *“javascript\lib”* with the name *“schc_cd.js”*.
 
-To use this module for decompression in a Node.js server the following steps should be followed:
+To use this module for decompression the following steps should be followed:
 
 1. Import the module.
 
@@ -44,32 +97,42 @@ To use this module for decompression in a Node.js server the following steps sho
 
     *CD.initializeCD();*
 
-4. Add the rules to be used. Rules should be previously defined following the given format. (For the moment, the rules should be added in their correponding oreder, matching the context of the compressor in the ES)
+4. Rules should be previously defined following the given format. 
+5. Add the rules to be used (For the moment, the rules should be added in their correponding oreder, matching the context of the compressor in the ES).
 
     *CD.addRule(rule);*
 
 Now the Compressor-Decompressor is all set up and ready to decompress received packets.
 For every packet received the following methods should be used in order:   
 
-5. The IPv6 IIDs depending on the rule could be obtained from L2, in this case the following method should be used to load the ES and LA IIDs to the Compressor-Decompressor.
+6. The IPv6 IIDs depending on the rule could be obtained from L2, in this case the following method should be used to load the ES and LA IIDs to the Compressor-Decompressor.
 
     *CD.loadIIDs(ESiid,LAiid);*
 
-6. The compressed packet received has to be loaded to the Compressor-Decompressor. In this method, the compressed packet is parsed into the rule, the values sent for the fields that have to receive something according to the rule and the payload.
+7. The compressed packet received has to be loaded to the Compressor-Decompressor. In this method, the compressed packet is parsed into the rule, the values sent for the fields that have to receive something according to the rule and the payload.
     
     *CD.parseCompressedPacket(compressedPacket);*
 
-7. Following the context of the rule received the decompression can be executed.
+8. Following the context of the rule received the decompression can be executed.
 
     *CD.decompressHeader();*
 
-After the decompression, the decompressed header can then be accessed through the variable *CD.decompressed_header*.
+After the decompression, the decompressed header can then be accessed through the variable *"CD.decompressed_header"*.
 
-The folder “javascript\test” contains a script called “testing.js” that can be used to test the decompression of different packets that follow a basic rule loaded as “rule0”. Other rules can be added following the rule format since the decompressor tolerate some flexibility.
+The folder *“javascript\test”* contains a script called *“testing.js”* that can be used to test the decompression of different packets that follow a basic rule loaded as *“rule0”*. Other rules can be added following the rule format.
 
-The folder “javascript\examples” contains a script called “decompression_server.js” which shows how a server could be set up and use the module to decompress the packets received.
+The folder *“javascript\examples”* contains a script called *“decompression_server.js”* which shows how a server could be set up and use the module to decompress the packets received.
 
-(ADD LIST OF POSSIBLE CDF)
+# Limitation
+
+The implementation has several limitations that will be taken care of in the near future. 
+
+For the moment the compressor does not support:
+- Downlink communication.
+- The “remapping” Compression-Decompression Function.
+- The use of CoAP Options in the CoAP header.
+
+Tackling these limitations are the next steps in making a fully functional implementation of the SCHC for LoRAWAN.
 
 # Appendix - Rule Format
 
