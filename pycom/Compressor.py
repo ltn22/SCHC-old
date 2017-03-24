@@ -35,7 +35,7 @@ class Compressor:
         self.udp_h = b""
 
         # Compressed packet ready to be send
-        self.compressed_packet_to_send = {
+        self.compressed_header_fields = {
             "rule": "",
             "IP_version": "",
             "IP_trafficClass": "",
@@ -118,8 +118,12 @@ class Compressor:
     def addRule(self, rule):
         self.context.append(rule)
 
-    def analyzePacketToSend(self, parsedHeaderFields):
+    def loadFromParser(self, parsedHeaderFields, payload):
         self.parsedHeaderFields = parsedHeaderFields
+        self.payload = payload
+        self.compressed_packet = b""
+
+    def analyzePacketToSend(self):
         # The first thing will be to compare every rule from the context with
         # the packet to be analysed, and check if it is possible to use any
         # compression rule for this packet
@@ -257,18 +261,18 @@ class Compressor:
                     # Binary to byte format
                     lsb_value = int(rcv_bin)
                     lsb_value = hexlify(bytes([lsb_value]))
-                    self.compressed_packet_to_send[
+                    self.compressed_header_fields[
                         field_name] = self.complete_field_zeros(lsb_value, lsb)
                     '''print("\t\t\t\t%d lsb of %s are sent to the server, value is %s" % (
-                        lsb, field_name, self.compressed_packet_to_send[field_name]))'''
+                        lsb, field_name, self.compressed_header_fields[field_name]))'''
 
                 # It is checked if the "compDecompFct" of the field contains
                 # "value-sent"
                 elif field_content["compDecompFct"] == "value-sent":
-                    self.compressed_packet_to_send[
+                    self.compressed_header_fields[
                         field_name] = self.parsedHeaderFields[field_name]
                     '''print("\t\t\t\tfield content of %s is sent to the server, value is %s" % (
-                        field_name, self.compressed_packet_to_send[field_name]))'''
+                        field_name, self.compressed_header_fields[field_name]))'''
 
                 # In any other case the field is omitted
                 # All fields with compute-* are not sent
@@ -276,7 +280,7 @@ class Compressor:
                     '''print("\t\t\t\tfield elided.")'''
 
             # The selected ruled is also sent in the packet
-            self.compressed_packet_to_send["rule"] = hexlify(
+            self.compressed_header_fields["rule"] = hexlify(
                 bytes([self.rule_found_id]))
 
         # If no rule is found the packet should be fragmented to be sent
@@ -284,162 +288,11 @@ class Compressor:
             print("\t\tNo rule found, the packet is dropped.")
 
     def sendPacketToLA(self):
-        return self.compressed_packet_to_send
+        return self.compressed_header_fields
 
     def receiveCompressedPacket(self, received_compressed_packet, payload):
         self.received_compressed_packet = received_compressed_packet
         self.received_payload = payload
-
-    def decompressPacket(self):
-        # Checks if the received rule is valid
-        if(self.received_compressed_packet["rule"] == ""):
-            return False
-        decompression_rule = int(
-            self.received_compressed_packet["rule"])
-        '''print("\n\t\tStart decompressing packet with the rule %d...\n" %
-              decompression_rule)'''
-
-        #
-        for field_name, field_content in self.decompressed_packet.items():
-            print("\t\t\tfield %s :" % field_name)
-
-            # It checks if the CDF for that field is "not-sent" according to
-            # the rule received
-            if self.context[decompression_rule][field_name]["compDecompFct"] == "not-sent":
-
-                # If it is the decompressed value of the field will be the
-                # "tagetValue" from that field of the rule received
-                self.decompressed_packet[field_name] = self.context[
-                    decompression_rule][field_name]["targetValue"]
-                '''print("\t\t\t\tdecompressed %s is %s (retrieved from the context)" % (
-                    field_name, self.decompressed_packet[field_name]))'''
-
-            # It checks if the CDF for that field is "value-sent" according to
-            # the rule received
-            elif self.context[decompression_rule][field_name]["compDecompFct"] == "value-sent":
-
-                # If it is the decompressed value of the field will be the same
-                # as the compressed value (which has not been compressed)
-                self.decompressed_packet[
-                    field_name] = self.received_compressed_packet[field_name]
-                '''print("\t\t\t\tdecompressed %s is %s (retrieved from the link)" % (
-                    field_name, self.decompressed_packet[field_name]))'''
-
-            elif self.context[decompression_rule][field_name]["compDecompFct"] == "remapping":
-
-                # For the moment the field will be remapped by using only LSBs
-                # Then the original value is obtained adding two zeros at the
-                # MSBs
-                self.decompressed_packet[field_name] = b"".join(
-                    [b"00", self.received_compressed_packet[field_name]])
-                '''print("\t\t\t\tdecompressed %s is %s (retrieved from the link)" % (
-                    field_name, self.decompressed_packet[field_name]))'''
-
-            # ESiid and LAiid must be obtained correctly from L2 but for now it
-            # will be used the TV
-            elif self.context[decompression_rule][field_name]["compDecompFct"] == "ESiid-DID":
-                self.decompressed_packet[field_name] = self.context[
-                    decompression_rule][field_name]["targetValue"]
-                '''print("\t\t\t\tdecompressed %s is %s (retrieved from L2)" % (
-                    field_name, self.decompressed_packet[field_name]))'''
-
-            elif self.context[decompression_rule][field_name]["compDecompFct"] == "LAiid-DID":
-                self.decompressed_packet[field_name] = self.context[
-                    decompression_rule][field_name]["targetValue"]
-                '''print("\t\t\t\tdecompressed %s is %s (retrieved from L2)" % (
-                    field_name, self.decompressed_packet[field_name]))'''
-
-            # It checks if the CDF for that field is "LSB" according to the
-            # rule received
-            reg = search(
-                'LSB\((.*)\)', self.context[decompression_rule][field_name]["compDecompFct"])
-            if reg:
-                # The number of LSB to be used is obtained from the rule
-                lsb = int(reg.group(1))
-
-                # The MSB are obtained from the "targetValue" of the field from
-                # that rule
-                ctx_bin = int(self.context[decompression_rule][
-                              field_name]["targetValue"], 16)
-
-                # The received value is expressed in binary representation
-                rcv_bin = int(self.received_compressed_packet[field_name], 16)
-
-                # The MSB and LSB are mershed with an OR to obtain the final
-                # value
-                res_or = ctx_bin | rcv_bin
-
-                # The final value is expressed in hexa
-                res_or = hexlify(
-                    res_or.to_bytes((res_or.bit_length() + 7) // 8, byteorder="big"))
-                self.decompressed_packet[field_name] = res_or
-                msb = self.field_size[field_name] - lsb
-                '''print("\t\t\t\tdecompressed %s is %s (retrieved from the context (%d MSB) and from the link (%d LSB))" % (
-                    field_name, self.decompressed_packet[field_name], msb, lsb))'''
-
-        # Now the compute-* fields must be computed
-
-        if self.context[decompression_rule]["UDP_length"]["compDecompFct"] == "compute-UDP-length":
-            # Length of the payload plus 8 bytes of the header
-            coap_h = b"".join([self.decompressed_packet["CoAP_version"], self.decompressed_packet["CoAP_tokenLength"], self.decompressed_packet[
-                "CoAP_code"], self.decompressed_packet["CoAP_messageID"], self.decompressed_packet["CoAP_token"], b"ff"])
-            self.coap_packet = b"".join([coap_h, self.received_payload])
-            udp_length = int(len(self.coap_packet) / 2) + 8
-            if udp_length > 255:
-                lsb = udp_length & 0x00FF
-                msb = udp_length >> 8
-            else:
-                lsb = udp_length
-                msb = 0
-            self.decompressed_packet[
-                "UDP_length"] = hexlify(bytes([msb, lsb]))
-            '''print("\t\t\t\tUDP Length computed: ",
-                  self.decompressed_packet["UDP_length"])'''
-            # 16 bits zeros checksum until it is computed
-            self.decompressed_packet["UDP_checksum"] = b"0000"
-            self.udp_h = b"".join([self.decompressed_packet["UDP_PortES"], self.decompressed_packet["UDP_PortLA"], self.decompressed_packet[
-                "UDP_length"], self.decompressed_packet["UDP_checksum"]])
-            self.udp_packet = b"".join([self.udp_h, self.coap_packet])
-
-        if self.context[decompression_rule]["UDP_checksum"]["compDecompFct"] == "compute-UDP-checksum":
-            udp_pseudo_header = b"".join([self.decompressed_packet["IP_prefixES"],
-                                          self.decompressed_packet["IP_iidES"],
-                                          self.decompressed_packet[
-                                              "IP_prefixLA"],
-                                          self.decompressed_packet["IP_iidLA"],
-                                          self.decompressed_packet[
-                                              "UDP_length"], b"00",
-                                          self.decompressed_packet["IP_nextHeader"]])
-            checksum_packet = b"".join([udp_pseudo_header, self.udp_packet])
-            hex_data = unhexlify(checksum_packet)
-            checksum_list = list(hex_data)
-            chksm = self.checksum(checksum_list)
-            if chksm > 255:
-                lsb = chksm & 0x00FF
-                msb = chksm >> 8
-            else:
-                lsb = chksm
-                msb = 0
-            checksum = bytes([msb, lsb])
-            self.decompressed_packet["UDP_checksum"] = hexlify(checksum)
-            '''print("\t\t\t\tUDP_Checksum computed: ",
-                  self.decompressed_packet["UDP_checksum"])'''
-
-        if self.context[decompression_rule]["IP_payloadLength"]["compDecompFct"] == "compute-IPv6-length":
-            ip_payloadlength = int(len(self.udp_packet) / 2)
-            if ip_payloadlength > 255:
-                lsb = ip_payloadlength & 0x00FF
-                msb = ip_payloadlength >> 8
-            else:
-                lsb = ip_payloadlength
-                msb = 0
-            self.decompressed_packet[
-                "IP_payloadLength"] = hexlify(bytes([msb, lsb]))
-            '''print("\t\t\t\tIP Payload Length computed: ",
-                  self.decompressed_packet["IP_payloadLength"])'''
-
-    def sendDecompressedPacketToLA(self):
-        return self.decompressed_packet
 
     def printContext(self):
         i = 0
@@ -457,21 +310,20 @@ class Compressor:
             '''print("\t\t\t%s : %s" % (field_name, field_content))'''
 
     def printSentPacket(self):
-        for field_name, field_content in self.compressed_packet_to_send.items():
-            self.compressed_packet_to_send.items()
+        for field_name, field_content in self.compressed_header_fields.items():
+            self.compressed_header_fields.items()
 
     # For now minimum size for each field is a nibble (should be changed)
     # Values should be stored in binary to then join the string -> int -> byte
-    def returnCompressedPacket(self, payload):
-        compressed_packet = b""
+    def appendCompressedPacket(self):
         # self.header_order is used to assure the header packet is formed in
         # the right order since the dictionaries order is not fixed
         for field_name in self.header_order:
-            if type(self.compressed_packet_to_send[field_name]) == bytes:
-                compressed_packet = b"".join(
-                    [compressed_packet, self.compressed_packet_to_send[field_name]])
-        compressed_packet = b"".join([compressed_packet, payload])
-        return compressed_packet
+            if type(self.compressed_header_fields[field_name]) == bytes:
+                self.compressed_packet = b"".join(
+                    [self.compressed_packet, self.compressed_header_fields[field_name]])
+        self.compressed_packet = b"".join(
+            [self.compressed_packet, self.payload])
 
     # Computes the UDP checksum for the decompressor
     def checksum(self, msg):
