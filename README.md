@@ -52,9 +52,9 @@ For every packet to be sent the following functions should be used:
 
    *parser.parser(packet)*
 
-6. Once the packet has been parsed the compressor analyses the header fields and looks for a rule that matches. Note that the function *“get_header_fields()”* from the parser will return the parsed header and this one is passed to the compressor to analyse it.
+6. Once the packet has been parsed the compressor analyses the header fields and looks for a rule that matches. Note that header fields are obtained from the parser, stored in *“parser.header_fields”*, and passed to the compressor to analyse it.
 
-   *compressor.analyzePacketToSend(parser.get_header_fields())*
+   *compressor.analyzePacketToSend(parser.header_fields)*
 
 7. If a rule is found that matches for all the header fields of the packet the compression can be done following that rule. The *“compressPacket()”* function will compress the last packet analysed.
 
