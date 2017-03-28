@@ -191,20 +191,22 @@ class udp_header:
         self.buffer = []
         '''print('Class UDP created')'''
 
-    def add_header(self, coap=[]):
+    def add_header(self, coap_packet=[]):
         self.buffer = []
 
-        source_port = 8080
-        destination_port = 9090
-        length = len(coap)
+        source_port = "1f90"
+        destination_port = "2382"
+        length = len(coap_packet) + 8
         self.add_two_bytes_field(source_port)
         self.add_two_bytes_field(destination_port)
         self.add_two_bytes_field(length)
-        coap_checksum = self.checksum(coap)
+        coap_checksum = self.checksum(coap_packet)
         self.add_two_bytes_field(coap_checksum)
-        self.buffer = self.buffer + coap
+        self.buffer = self.buffer + coap_packet
 
     def add_two_bytes_field(self, value):
+        if type(value) != int:
+            value = int(value, 16)
         if value > 255:
             lsb = value & 0x00FF
             msb = value >> 8
@@ -214,30 +216,30 @@ class udp_header:
         self.buffer = self.buffer + [msb, lsb]
 
     def checksum(self, msg):
-        # Here needs to be included the pseudo-header for UDP and the UDP
-        # header
+        source_address = [
+            32, 1, 13, 184, 10, 11, 18, 240, 112, 179, 213, 73, 146, 90, 166, 25]
+        destination_adress = [
+            45, 81, 61, 232, 10, 11, 77, 240, 173, 164, 218, 227, 172, 18, 103, 107]
+        pseudo_header = source_address + \
+            destination_adress + [0, len(msg) + 8, 0, 17]
+
+        # msg includes the pseudo-header for UDP, the UDP header and the UDP
+        # payload.
+        msg = pseudo_header + self.buffer + [0, 0] + msg
+
+        # If the length of msg is not even a zero byte is added
         if len(msg) % 2 == 1:
-            '''print("need to add 0")'''
             msg += [0]
         s = 0
-        # loop taking 2 characters at a time
+        w = 0
         for i in range(0, len(msg), 2):
-            if type(msg[i]) == int:
-                if type(msg[i + 1]) == int:
-                    w = msg[i + 1] + (msg[i] << 8)
-                else:
-                    w = msg[i + 1] + (ord(msg[i]) << 8)
-            else:
-                if type(msg[i + 1]) == int:
-                    w = ord(msg[i + 1]) + (msg[i] << 8)
-                else:
-                    w = ord(msg[i + 1]) + (ord(msg[i]) << 8)
+            w = msg[i + 1] + (msg[i] << 8)
             s = s + w
+
         while s > 0xffff:
             s = (s >> 16) + (s & 0xffff)
-        # complement and mask to 4 byte short
+        # Complement and mask to 2 bytes (dont know for what is this last part)
         s = ~s & 0xffff
-        #    print "the results is " + str(s)
         return s
 
 
@@ -256,12 +258,12 @@ class ipv6_header:
         version = b"6"
         traffic_class = b"00"
         flow_label = b"00000"
-        payload_length = binascii.hexlify(bytes([len(msg)]))
+        payload_length = binascii.hexlify(bytes([len(msg) + 8]))
         payload_length = self.complete_field_zeros(payload_length, 16)
         next_header = b"11"
         hop_limit = b"40"
-        source_address = b"20010db80a0b12f00000000000000001"
-        destination_adress = b"2d513de80a0b4df00000000000000001"
+        source_address = b"20010db80a0b12f070b3d549925aa619"
+        destination_adress = b"2d513de80a0b4df0ada4dae3ac12676b"
         for item in msg:
             udp_coap = b"".join([udp_coap, binascii.hexlify(bytes([item]))])
         self.buffer = b"".join([version, traffic_class, flow_label, payload_length, next_header,
