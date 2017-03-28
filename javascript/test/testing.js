@@ -21,7 +21,7 @@ var rule0 = {
         "compDecompFct": "not-sent",
     },
     "IP_payloadLength": {
-        "targetValue": '',
+        "targetValue": "",
         "matchingOperator": "ignore",
         "compDecompFct": "compute-IPv6-length",
     },
@@ -66,22 +66,22 @@ var rule0 = {
         "compDecompFct": "not-sent",
     },
     "UDP_length": {
-        "targetValue": '',
+        "targetValue": "",
         "matchingOperator": "ignore",
         "compDecompFct": "compute-UDP-length",
     },
     "UDP_checksum": {
-        "targetValue": '',
+        "targetValue": "",
         "matchingOperator": "ignore",
         "compDecompFct": "compute-UDP-checksum",
     },
     "CoAP_version": {
-        "targetValue": "5",
+        "targetValue": "1",
         "matchingOperator": "equal",
         "compDecompFct": "not-sent",
     },
     "CoAP_type": {
-        "targetValue": "5",
+        "targetValue": "1",
         "matchingOperator": "equal",
         "compDecompFct": "not-sent",
     },
@@ -96,12 +96,12 @@ var rule0 = {
         "compDecompFct": "not-sent",
     },
     "CoAP_messageID": {
-        "targetValue": "00",
-        "matchingOperator": "MSB(8)",
-        "compDecompFct": "LSB(8)",
+        "targetValue": "000",
+        "matchingOperator": "MSB(12)",
+        "compDecompFct": "LSB(4)",
     },
      "CoAP_token": {
-        "targetValue": '',
+        "targetValue": "",
         "matchingOperator": "ignore",
         "compDecompFct": "value-sent",
     }
@@ -123,7 +123,7 @@ CD.addCompressionRule(rule0);
 CD.loadIIDs("70b3d549925aa619","ada4dae3ac12676b"); // Examples of IIDs
 
 // Parsing the compressed packet received
-CD.parseCompressedPacket("00010a83190089003903c0"); // Example of a compressed message with rule0
+CD.parseCompressedPacket("0010a83190089003903c0"); // Example of a compressed message with rule0
 
 // Decompression of the header according to the rule
 CD.decompressHeader();
