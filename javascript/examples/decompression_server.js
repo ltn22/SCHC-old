@@ -27,7 +27,7 @@ var rule0 = {
         "compDecompFct": "not-sent",
     },
     "IP_payloadLength": {
-        "targetValue": '',
+        "targetValue": "",
         "matchingOperator": "ignore",
         "compDecompFct": "compute-IPv6-length",
     },
@@ -72,22 +72,22 @@ var rule0 = {
         "compDecompFct": "not-sent",
     },
     "UDP_length": {
-        "targetValue": '',
+        "targetValue": "",
         "matchingOperator": "ignore",
         "compDecompFct": "compute-UDP-length",
     },
     "UDP_checksum": {
-        "targetValue": '',
+        "targetValue": "",
         "matchingOperator": "ignore",
         "compDecompFct": "compute-UDP-checksum",
     },
     "CoAP_version": {
-        "targetValue": "5",
+        "targetValue": "1",
         "matchingOperator": "equal",
         "compDecompFct": "not-sent",
     },
     "CoAP_type": {
-        "targetValue": "5",
+        "targetValue": "1",
         "matchingOperator": "equal",
         "compDecompFct": "not-sent",
     },
@@ -102,12 +102,12 @@ var rule0 = {
         "compDecompFct": "not-sent",
     },
     "CoAP_messageID": {
-        "targetValue": "00",
-        "matchingOperator": "MSB(8)",
-        "compDecompFct": "LSB(8)",
+        "targetValue": "000",
+        "matchingOperator": "MSB(12)",
+        "compDecompFct": "LSB(4)",
     },
-    "CoAP_token": {
-        "targetValue": '',
+     "CoAP_token": {
+        "targetValue": "",
         "matchingOperator": "ignore",
         "compDecompFct": "value-sent",
     }
