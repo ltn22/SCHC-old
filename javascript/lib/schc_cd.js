@@ -135,12 +135,14 @@ cdf.prototype.decompressHeader = function(){
             // If it is the decompressed value of the field will be the "tagetValue" from that field of the rule received
             this.decompressed_header[field_name] = this.context[decompression_rule][field_name]["targetValue"];
             // This is PROVISIONAL as the whole nibble is checked for the matach and so is how the rule is defined
+            /*
             if(field_name === "CoAP_version"){
                 this.decompressed_header[field_name] = (12 & this.decompressed_header[field_name]) >>> 2;
             }
             else if(field_name === "CoAP_type"){
                 this.decompressed_header[field_name] = 3 & this.decompressed_header[field_name] ;
             }
+            */
             console.log("\t\t\t\tdecompressed " + field_name + " is " + this.decompressed_header[field_name] +
                 " (retrieved from the context)");
         }
@@ -193,9 +195,12 @@ cdf.prototype.decompressHeader = function(){
     var lsb;
     var msb;
     if (this.context[decompression_rule]["UDP_length"]["compDecompFct"] === "compute-UDP-length"){
+        var aux =  (parseInt(this.decompressed_header["CoAP_version"],16) << 6) |
+            (parseInt(this.decompressed_header["CoAP_type"],16) << 4) |
+            parseInt(this.decompressed_header["CoAP_tokenLength"],16);
+        aux = aux.toString(16);
         // Length of the payload plus 8 bytes of the header
-        var coap_h = this.decompressed_header["CoAP_version"] +
-            this.decompressed_header["CoAP_tokenLength"] +
+        var coap_h = aux +
             this.decompressed_header["CoAP_code"] +
             this.decompressed_header["CoAP_messageID"] +
             this.decompressed_header["CoAP_token"] + "ff";
