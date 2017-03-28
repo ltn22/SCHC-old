@@ -6,7 +6,6 @@ Created on 2 mar. 2017
 
 from re import search
 from binascii import hexlify
-from binascii import unhexlify
 
 
 class Compressor:
@@ -24,15 +23,6 @@ class Compressor:
 
         # Received payload for the decompression stage
         self.received_payload = b""
-
-        # Received CoAP packet
-        self.coap_packet = b""
-
-        # Received UDP packet
-        self.udp_packet = b""
-
-        # Received UDP packet
-        self.udp_h = b""
 
         # Compressed packet ready to be send
         self.compressed_header_fields = {
@@ -121,7 +111,6 @@ class Compressor:
     def loadFromParser(self, parsedHeaderFields, payload):
         self.parsedHeaderFields = parsedHeaderFields
         self.payload = payload
-        self.compressed_packet = b""
 
     def analyzePacketToSend(self):
         # The first thing will be to compare every rule from the context with
@@ -259,12 +248,14 @@ class Compressor:
                         self.field_size[field_name] - lsb:self.field_size[field_name]]
 
                     # Binary to byte format
-                    lsb_value = int(rcv_bin)
-                    lsb_value = hexlify(bytes([lsb_value]))
+                    lsb_value = int(rcv_bin, 2)
+                    lsb_value = hexlify(
+                        lsb_value.to_bytes((lsb_value.bit_length() + 7) // 8, byteorder='big'))
                     self.compressed_header_fields[
                         field_name] = self.complete_field_zeros(lsb_value, lsb)
-                    '''print("\t\t\t\t%d lsb of %s are sent to the server, value is %s" % (
-                        lsb, field_name, self.compressed_header_fields[field_name]))'''
+                    # print("\t\t\t\t%d lsb of %s are sent to the server, value is %s" % (
+                    # lsb, field_name,
+                    # self.compressed_header_fields[field_name]))
 
                 # It is checked if the "compDecompFct" of the field contains
                 # "value-sent"
@@ -287,9 +278,6 @@ class Compressor:
         else:
             print("\t\tNo rule found, the packet is dropped.")
 
-    def sendPacketToLA(self):
-        return self.compressed_header_fields
-
     def receiveCompressedPacket(self, received_compressed_packet, payload):
         self.received_compressed_packet = received_compressed_packet
         self.received_payload = payload
@@ -307,15 +295,15 @@ class Compressor:
 
     def printReceivedPacket(self):
         for field_name, field_content in self.parsedHeaderFields.items():
-            '''print("\t\t\t%s : %s" % (field_name, field_content))'''
+            print("\t\t\t%s : %s" % (field_name, field_content))
 
     def printSentPacket(self):
         for field_name, field_content in self.compressed_header_fields.items():
             self.compressed_header_fields.items()
 
     # For now minimum size for each field is a nibble (should be changed)
-    # Values should be stored in binary to then join the string -> int -> byte
     def appendCompressedPacket(self):
+        self.compressed_packet = b""
         # self.header_order is used to assure the header packet is formed in
         # the right order since the dictionaries order is not fixed
         for field_name in self.header_order:
@@ -336,7 +324,6 @@ class Compressor:
         s = 0
         # Loop taking 2 bytes at a time (16 bits)
         for i in range(0, len(msg), 2):
-            #w = msg[i] + (msg[i + 1] << 8)
             w = msg[i + 1] + (msg[i] << 8)  # Primer bit es el mas grande
             s = s + w
         while s > 0xffff:
@@ -357,4 +344,12 @@ class Compressor:
         nibbles = int(field_length / 4)
         while(len(field) < nibbles):
             field = b"".join([b"0", field])
+        while(len(field) > nibbles):
+            field = field[1:]
         return field
+
+
+def bit_length(self):
+    s = bin(self)       # binary representation:  bin(-37) --> '-0b100101'
+    s = s.lstrip('-0b')  # remove leading zeros and minus sign
+    return len(s)
