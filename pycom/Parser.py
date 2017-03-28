@@ -4,7 +4,7 @@ Created on 2 mar. 2017
 @author: Philippe Clavier
 '''
 
-#import binascii
+from binascii import hexlify
 
 
 class Parser:
@@ -13,18 +13,8 @@ class Parser:
         self.header_fields = {}
         self.payload = b""
 
-    def parser(self, pcap_file_name):
-        self.pcap_file_name = pcap_file_name
-        # Opens the captures file (Opened for reading in binary mode)
-        #self.reader = open(self.pcap_file_name, mode="rb")
-        # Reads the entire file and is stored in self.packet
-        #self.packet = self.reader.read()
-        # Every byte of data is converted into the corresponding 2-digit hex
-        # representation.
-        #self.packetHexa = binascii.hexlify(self.packet)
-        # Bytes from position 80 to the end are stored (reason ???)
-        #self.sepacketHexaContent = self.packetHexa[80:]
-        self.sepacketHexaContent = self.pcap_file_name
+    def parser(self, packet):
+        self.sepacketHexaContent = packet
 
         # The complete trame content in printed
         '''print("\n\t\tTrame content (hexa): %s" % self.sepacketHexaContent)'''
@@ -104,17 +94,15 @@ class Parser:
         '''print("\t\t\tUDP Checksum (hexa): %s" %
               self.header_fields["UDP_checksum"])'''
 
-        # The CoAp header should be handled in a different way (for now it will
-        # be kept this way)
-        self.header_fields["CoAP_version"] = self.sepacketHexaContent[96:97]
-        self.header_fields["CoAP_version_bin"] = bin(
-            int(self.header_fields["CoAP_version"], 16))[2:3]
+        coap_version_type = self.sepacketHexaContent[96:97]
+
+        self.header_fields["CoAP_version"] = hexlify(bytes(
+            [int(coap_version_type, 16) >> 2]))[1:]
         '''print("\t\t\tCoAP version (decimal): %d" %
               int(self.header_fields["CoAP_version_bin"], 2))'''
 
-        self.header_fields["CoAP_type"] = self.sepacketHexaContent[96:97]
-        self.header_fields["CoAP_type_bin"] = bin(
-            int(self.header_fields["CoAP_type"], 16))[3:5]
+        self.header_fields["CoAP_type"] = hexlify(
+            (bytes([int(coap_version_type) & 3])))[1:]
         '''print("\t\t\tCoAP Type (decimal): %d" %
               int(self.header_fields["CoAP_type_bin"], 2))'''
 
@@ -143,6 +131,3 @@ class Parser:
             self.payload = self.sepacketHexaContent[108:]
 
         # For now options will not be treated
-
-    def get_header_fields(self):
-        return self.header_fields
