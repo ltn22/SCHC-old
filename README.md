@@ -289,7 +289,7 @@ var rule0 = {
     
     "CoAP_version": {
     
-        "targetValue": "5",
+        "targetValue": "1",
         
         "matchingOperator": "equal",
         
@@ -299,7 +299,7 @@ var rule0 = {
     
     "CoAP_type": {
     
-        "targetValue": "5",
+        "targetValue": "1",
         
         "matchingOperator": "equal",
         
@@ -329,11 +329,11 @@ var rule0 = {
     
     "CoAP_messageID": {
     
-        "targetValue": "00",
+        "targetValue": "000",
         
-        "matchingOperator": "MSB(8)",
+        "matchingOperator": "MSB(12)",
         
-        "compDecompFct": "LSB(8)",
+        "compDecompFct": "LSB(4)",
         
     },
     
