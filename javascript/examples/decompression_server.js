@@ -4,8 +4,7 @@
 
 var path = require('path');
 var express = require('express');
-var logger = require('morgan');
-var bodyParser = require('body-parser');
+
 var comp_decomp = require('../lib/schc_cd'); // IMPORTING CD MODULE
 
 // --------------------------------------------------------------
@@ -114,16 +113,10 @@ var rule0 = {
 };
 // --------------------------------------------------------------
 
-// HTTP server : communication to the LNS
-
+// HTTP server
 var httpServer = express();
-httpServer.use(logger('dev'));
 
-// Serve static files
-httpServer.use(express.static(path.join(__dirname, 'public')));
-httpServer.use(bodyParser.raw());
-
-// Route for everything else.
+// Route for POST /lopy
 httpServer.post('/lopy/*', function(req, res){
     var buff = '';
     var CD = new comp_decomp(); // NEW (EMPTY) Compressor Decompressor Function
@@ -134,24 +127,17 @@ httpServer.post('/lopy/*', function(req, res){
         buff = data;
     });
     req.on('end',function(){
-        console.log();
-        console.log ('http receives on APP '+"["+buff.toString()+"]")
-        console.log();
+        console.log ('\nhttp receives on APP '+"["+buff.toString()+"]\n")
         var ESiid = separate_ESiid(buff.toString());
         var LAiid = separate_LAiid(buff.toString());
         var data = separate_data(buff.toString());
 
-        CD.parseCompressedPacket(data); // Parsing compressed packet received
         CD.loadIIDs(ESiid,LAiid); // Load IIDs obtained from L2 (ESiid, LAiid)
+        CD.parseCompressedPacket(data); // Parsing compressed packet received
         CD.decompressHeader(); // Decompression of packet received
-
-        res.writeHead(200);
-        res.end('01020304');
-        console.log('no more data');
     });
 });
 
-// Fire it up!
 httpServer.listen(3333);
 console.log('Listening on port 3333');
 
