@@ -128,54 +128,20 @@ httpServer.post('/lopy/*', function(req, res){
     });
     req.on('end',function(){
         console.log ('\nhttp receives on APP '+"["+buff.toString()+"]\n")
-        var ESiid = separate_ESiid(buff.toString());
-        var LAiid = separate_LAiid(buff.toString());
-        var data = separate_data(buff.toString());
+        var http_data = JSON.parse(buff.toString());
+        var ESiid = http_data.devEUI;
+        var LAiid = http_data.appEUI;
+        var message = http_data.data;
+
+        // Message is passed from base64 to hex
+        message = new Buffer(message, 'base64');
+        message = message.toString('hex');
 
         CD.loadIIDs(ESiid,LAiid); // Load IIDs obtained from L2 (ESiid, LAiid)
-        CD.parseCompressedPacket(data); // Parsing compressed packet received
+        CD.parseCompressedPacket(message); // Parsing compressed packet received
         CD.decompressHeader(); // Decompression of packet received
     });
 });
 
 httpServer.listen(3333);
 console.log('Listening on port 3333');
-
-// AUXILIARY FUNCTIONS
-
-// OBTAINING THE RECIEVED DATA FROM THE HTTP APP
-// Searches "data" in the http message and returns it
-function separate_data(full_string){
-    var initial_position = full_string.search('data');
-    initial_position += 7;
-    var final_position = full_string.search('loRaSNR');
-    final_position -= 3;
-    var data_string = full_string.slice(initial_position, final_position);
-    console.log ( "\tData (base64): " + data_string);
-    var b = new Buffer(data_string, 'base64');
-    var hex_data = b.toString('hex');
-    console.log ( "\tData (hex): %s (%d bytes)", hex_data, hex_data.length/2);
-    return hex_data;
-}
-
-// Searches ""devEUI"" in the http message and returns it
-function separate_ESiid(full_string){
-    initial_position = full_string.search('devEUI');
-    initial_position += 9;
-    final_position = full_string.search('appEUI');
-    final_position -= 3;
-    data_string = full_string.slice(initial_position, final_position);
-    console.log ( "\tdevEUI (hex): " + data_string);
-    return data_string;
-}
-
-// Searches "appEUI" in the http message and returns it
-function separate_LAiid(full_string){
-    initial_position = full_string.search('appEUI');
-    initial_position += 9;
-    final_position = full_string.search('fPort');
-    final_position -= 3;
-    data_string = full_string.slice(initial_position, final_position);
-    console.log ( "\tappEUI (hex): " + data_string);
-    return data_string;
-}
