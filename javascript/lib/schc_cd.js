@@ -60,6 +60,9 @@ cdf.prototype.initializeCD = function(){
         "CoAP_token": ""
     };
 
+    // Mapping ID length in bits(should be defined by a rule)
+    mapping_id_length = 8;
+
     // Decompressed fields sizes in bits
     this.field_size = {
         "IP_version": 4,
@@ -111,6 +114,14 @@ cdf.prototype.parseCompressedPacket = function(received_compressed_packet){
             this.decompressed_header[this.header_order[order]] = complete_field_zeros(field_data,length_bits);
             index += length_bits;
         }
+        var condition = /mapping-sent\((.*)\)/.test(this.context[rule][this.header_order[order]]["compDecompFct"]);
+        if (condition){
+            var reg = /mapping-sent\((.*)\)/.exec(this.context[rule][this.header_order[order]]["compDecompFct"]);
+            var length_bits = parseInt(reg[1]);
+            var field_data = obtain_compressed_field(index, length_bits,received_compressed_packet);
+            this.decompressed_header[this.header_order[order]] = complete_field_zeros(field_data,length_bits);
+            index += length_bits;
+        }
         var condition = /LSB\((.*)\)/.test(this.context[rule][this.header_order[order]]["compDecompFct"]);
         if (condition){
             // The number of LSB to be used is obtained from the "CDF" of the rule
@@ -153,12 +164,6 @@ cdf.prototype.decompressHeader = function(){
             console.log("\t\t\t\tdecompressed " + field_name + " is " + this.decompressed_header[field_name] +
                 " (retrieved from the link)");
         }
-        else if (this.context[decompression_rule][field_name]["compDecompFct"] === "remapping") {
-            // For the moment the field will be remapped by using only LSBs
-            // Then the original value is obtained adding two zeros at the MSBs
-            console.log("\t\t\t\tdecompressed " + field_name + " is " + this.decompressed_header[field_name] +
-                " (retrieved from the link)");
-        }
         // ESiid and LAiid must be obtained correctly from L2 but for now it will be used the TV
         else if (this.context[decompression_rule][field_name]["compDecompFct"] === "ESiid-DID") {
             this.decompressed_header[field_name] = this.ESiid;
@@ -169,6 +174,15 @@ cdf.prototype.decompressHeader = function(){
             this.decompressed_header[field_name] = this.LAiid;
             console.log("\t\t\t\tdecompressed " + field_name + " is " + this.decompressed_header[field_name] +
                 " (retrieved from L2)");
+        }
+        var condition = /mapping-sent\((.*)\)/.test(this.context[decompression_rule][field_name]["compDecompFct"]);
+        if (condition){
+            // The received field is the key in the Target Value for the true value
+            var key = this.decompressed_header[field_name];
+            this.decompressed_header[field_name] = this.context[decompression_rule][field_name]["targetValue"][key];
+
+            console.log("\t\t\t\tdecompressed " + field_name + " is " + this.decompressed_header[field_name] +
+                " (retrieved from the mapping-sent)");
         }
         // It checks if the CDF for that field is "LSB" according to the rule received
         var condition = /LSB\((.*)\)/.test(this.context[decompression_rule][field_name]["compDecompFct"]);
@@ -227,7 +241,7 @@ cdf.prototype.decompressHeader = function(){
             this.decompressed_header["IP_prefixLA"] + this.decompressed_header["IP_iidLA"] +
             this.decompressed_header["UDP_length"] + "00" + this.decompressed_header["IP_nextHeader"];
         var checksum_packet = udp_pseudo_header + udp_packet;
-        var checksum_buffer = new Buffer(checksum_packet, 'hex');
+        var checksum_buffer = new Buffer(checksum_packet,'hex');
         var chksm = checksum(checksum_buffer);
         if (chksm > 255){
             lsb = chksm & 0x00FF;
@@ -284,7 +298,7 @@ function checksum(msg){
     // Complement and mask to 2 bytes (dont know for what is this last part)
     s = ~s & 0xffff;
     return s;
-};
+}
 
 function complete_field_zeros(field, field_length){
     // The function receives the length of the field in bits and completes de
@@ -294,7 +308,7 @@ function complete_field_zeros(field, field_length){
         field = "0" + field ;
     }
     return field;
-};
+}
 
 function obtain_compressed_field(index, length_bits,compPacket){
     var nibble_index = Math.floor(index/4);
