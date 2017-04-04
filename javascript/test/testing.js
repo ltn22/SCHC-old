@@ -36,9 +36,12 @@ var rule0 = {
         "compDecompFct": "not-sent",
     },
     "IP_prefixES": {
-        "targetValue": "20010db80a0b12f0",
-        "matchingOperator": "ignore",
-        "compDecompFct": "not-sent",
+        "targetValue": {
+            "1": "20010db80a0b12f0",
+            "2": "2d513de80a0b4df0"
+        },
+        "matchingOperator": "match-mapping",
+        "compDecompFct": "mapping-sent(4)"
     },
     "IP_iidES": {
         "targetValue": "",
@@ -46,9 +49,12 @@ var rule0 = {
         "compDecompFct": "ESiid-DID",
     },
     "IP_prefixLA": {
-        "targetValue": "2d513de80a0b4df0",
-        "matchingOperator": "equal",
-        "compDecompFct": "not-sent",
+        "targetValue": {
+            "1": "20010db80a0b12f0",
+            "2": "2d513de80a0b4df0"
+            },
+        "matchingOperator": "match-mapping",
+        "compDecompFct": "mapping-sent(4)"
     },
     "IP_iidLA": {
         "targetValue": "",
