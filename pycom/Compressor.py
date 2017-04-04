@@ -122,11 +122,12 @@ class Compressor:
 
         for rule in self.context:
             '''print("\n\t\tAnalyzing rule %d..." % i)'''
-            matched = False
 
             # Each field in the rule will be analysed
             for field_name, field_content in rule.items():
                 '''print("\t\t\tfield %s :" % field_name)'''
+
+                matched = False
 
                 # It is checked which is the "matchingOperator" for that field
                 # Possible "matchingOperators" are: equal | ignore | MSB(*)
@@ -141,9 +142,7 @@ class Compressor:
                     if field_content["targetValue"] == self.parsedHeaderFields[field_name]:
                         '''print("\t\t\t\t\t...it is a match.")'''
                         matched = True
-                    else:
-                        matched = False
-                        break
+
                 if field_content["matchingOperator"] == "ignore":
 
                     # If the "matchingOperator" is "ignore" this fields value
@@ -152,6 +151,15 @@ class Compressor:
                         field_name, field_content["targetValue"], self.parsedHeaderFields[field_name]))'''
                     '''print("\t\t\t\t\t...but they are ignored.")'''
                     matched = True
+
+                if field_content["matchingOperator"] == "match-mapping":
+                    # Every item in the target value should be checked for a
+                    # matching
+
+                    for mapping_id, mapping_value in field_content["targetValue"].items():
+                        if mapping_value == self.parsedHeaderFields[field_name]:
+                            matched = True
+                            break
 
                 # serach() function makes a comparison between the field
                 # "matchingOperator" and "MSB" if it matches it gives back a
@@ -193,9 +201,9 @@ class Compressor:
                         '''print(
                             "\t\t\t\t\t...it is a match on the first %d bits." % msb)'''
                         matched = True
-                    else:
-                        matched = False
-                        break
+
+                if matched == False:
+                    break
 
             # Finally if the rule has matched it finishes, if not it keeps
             # comparing with the other rules of the list
@@ -256,6 +264,17 @@ class Compressor:
                     # print("\t\t\t\t%d lsb of %s are sent to the server, value is %s" % (
                     # lsb, field_name,
                     # self.compressed_header_fields[field_name]))
+
+                reg = search(
+                    'mapping-sent\((.*)\)', field_content["compDecompFct"])
+                if reg:
+                    # The value matched is searched and the mapping ID is saved
+
+                    for mapping_id, mapping_value in field_content["targetValue"].items():
+                        if mapping_value == self.parsedHeaderFields[field_name]:
+                            self.compressed_header_fields[
+                                field_name] = mapping_id
+                            break
 
                 # It is checked if the "compDecompFct" of the field contains
                 # "value-sent"
