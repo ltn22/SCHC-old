@@ -47,19 +47,25 @@ rule0 = {
         "compDecompFct": "not-sent"
     },
     "IP_prefixES": {
-        "targetValue": b"20010db80a0b12f0",
-        "matchingOperator": "ignore",
-        "compDecompFct": "not-sent"
+        "targetValue": {
+            b"1": b"20010db80a0b12f0",
+            b"2": b"2d513de80a0b4df0",
+        },
+        "matchingOperator": "match-mapping",
+        "compDecompFct": "mapping-sent(4)"
     },
     "IP_iidES": {
         "targetValue": b"",
         "matchingOperator": "ignore",
         "compDecompFct": "ESiid-DID"
     },
-    "IP_prefixLA": {
-        "targetValue": b"2d513de80a0b4df0",
-        "matchingOperator": "equal",
-        "compDecompFct": "not-sent"
+   "IP_prefixLA": {
+        "targetValue": {
+            b"1": b"20010db80a0b12f0",
+            b"2": b"2d513de80a0b4df0",
+        },
+        "matchingOperator": "match-mapping",
+        "compDecompFct": "mapping-sent(4)"
     },
     "IP_iidLA": {
         "targetValue": b"",
