@@ -129,7 +129,7 @@ CD.addCompressionRule(rule0);
 CD.loadIIDs("70b3d549925aa619","ada4dae3ac12676b"); // Examples of IIDs
 
 // Parsing the compressed packet received
-CD.parseCompressedPacket("0010a83190089003903c0"); // Example of a compressed message with rule0
+CD.parseCompressedPacket("001210a83190089003903c0"); // Example of a compressed message with rule0
 
 // Decompression of the header according to the rule
 CD.decompressHeader();
