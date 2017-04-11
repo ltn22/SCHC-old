@@ -24,7 +24,39 @@ class Compressor:
         # Received payload for the decompression stage
         self.received_payload = b""
 
-        # Compressed packet ready to be send
+        # Fields sizes in bits
+        self.field_size = {
+            "IP_version": 4,
+            "IP_trafficClass": 8,
+            "IP_flowLabel": 20,
+            "IP_payloadLength": 16,
+            "IP_nextHeader": 8,
+            "IP_hopLimit": 8,
+            "IP_prefixES": 64,
+            "IP_iidES": 64,
+            "IP_prefixLA": 64,
+            "IP_iidLA": 64,
+            "UDP_PortES": 16,
+            "UDP_PortLA": 16,
+            "UDP_length": 16,
+            "UDP_checksum": 16,
+            "CoAP_version": 2,
+            "CoAP_type": 2,
+            "CoAP_tokenLength": 4,
+            "CoAP_code": 8,
+            "CoAP_messageID": 16,
+            "CoAP_token": 8
+        }
+
+    def addRule(self, rule):
+        self.context.append(rule)
+
+    def loadFromParser(self, parsedHeaderFields, coap_header_options, payload):
+        self.parsedHeaderFields = parsedHeaderFields
+        self.coap_header_options = coap_header_options
+        self.payload = payload
+
+        # Reset initial values
         self.compressed_header_fields = {
             "rule": "",
             "IP_version": "",
@@ -49,68 +81,12 @@ class Compressor:
             "CoAP_token": ""
         }
 
-        # Auxiliar list to order the dictionary
-        self.header_order = ["rule", "IP_version", "IP_trafficClass", "IP_flowLabel",
+        # Auxiliary list to order the dictionary
+        self.header_order = ["IP_version", "IP_trafficClass", "IP_flowLabel",
                              "IP_payloadLength", "IP_nextHeader", "IP_hopLimit", "IP_prefixES", "IP_iidES",
                              "IP_prefixLA", "IP_iidLA", "UDP_PortES", "UDP_PortLA",
                              "UDP_length", "UDP_checksum", "CoAP_version", "CoAP_type", "CoAP_tokenLength",
                              "CoAP_code", "CoAP_messageID", "CoAP_token"]
-
-        # Values to be filled after the decompression of the packet received
-        self.decompressed_packet = {
-            "IP_version": "",
-            "IP_trafficClass": "",
-            "IP_flowLabel": "",
-            "IP_payloadLength": "",
-            "IP_nextHeader": "",
-            "IP_hopLimit": "",
-            "IP_prefixES": "",
-            "IP_iidES": "",
-            "IP_prefixLA": "",
-            "IP_iidLA": "",
-            "UDP_PortES": "",
-            "UDP_PortLA": "",
-            "UDP_length": "",
-            "UDP_checksum": "",
-            "CoAP_version": "",
-            "CoAP_type": "",
-            "CoAP_tokenLength": "",
-            "CoAP_code": "",
-            "CoAP_messageID": "",
-            "CoAP_token": ""
-        }
-
-        # Fields sizes in bits
-        self.field_size = {
-            "IP_version": 4,
-            "IP_trafficClass": 8,
-            "IP_flowLabel": 20,
-            "IP_payloadLength": 16,
-            "IP_nextHeader": 8,
-            "IP_hopLimit": 8,
-            "IP_prefixES": 64,
-            "IP_iidES": 64,
-            "IP_prefixLA": 64,
-            "IP_iidLA": 64,
-            "UDP_PortES": 16,
-            "UDP_PortLA": 16,
-            "UDP_length": 16,
-            "UDP_checksum": 16,
-            "CoAP_version": 2,
-            "CoAP_type": 2,
-            "CoAP_tokenLength": 4,
-            "CoAP_code": 8,
-            "CoAP_messageID": 16,
-            "CoAP_token": 8
-        }
-    # Tokens and Options are not being taken into account for now
-
-    def addRule(self, rule):
-        self.context.append(rule)
-
-    def loadFromParser(self, parsedHeaderFields, payload):
-        self.parsedHeaderFields = parsedHeaderFields
-        self.payload = payload
 
     def analyzePacketToSend(self):
         # The first thing will be to compare every rule from the context with
@@ -120,12 +96,21 @@ class Compressor:
         self.rule_found_id = 0
         i = 0
 
+        # I add this to know every field received has a match
+        fieldsMatchCheck = self.parsedHeaderFields.copy()
+
         for rule in self.context:
             '''print("\n\t\tAnalyzing rule %d..." % i)'''
 
             # Each field in the rule will be analysed
             for field_name, field_content in rule.items():
                 '''print("\t\t\tfield %s :" % field_name)'''
+
+                # reg = search(
+                #    '(.*)\s(.*)', field_name)
+                # if reg:
+                #    cleanName = reg.group(1)
+                #    index = reg.group(2)
 
                 matched = False
 
@@ -141,6 +126,7 @@ class Compressor:
                     # and check if there is a match
                     if field_content["targetValue"] == self.parsedHeaderFields[field_name]:
                         '''print("\t\t\t\t\t...it is a match.")'''
+                        fieldsMatchCheck[field_name] = True
                         matched = True
 
                 if field_content["matchingOperator"] == "ignore":
@@ -150,6 +136,7 @@ class Compressor:
                     '''print("\t\t\t\t%s context value is %s and received value is %s..." % (
                         field_name, field_content["targetValue"], self.parsedHeaderFields[field_name]))'''
                     '''print("\t\t\t\t\t...but they are ignored.")'''
+                    fieldsMatchCheck[field_name] = True
                     matched = True
 
                 if field_content["matchingOperator"] == "match-mapping":
@@ -158,6 +145,7 @@ class Compressor:
 
                     for mapping_id, mapping_value in field_content["targetValue"].items():
                         if mapping_value == self.parsedHeaderFields[field_name]:
+                            fieldsMatchCheck[field_name] = True
                             matched = True
                             break
 
@@ -200,9 +188,15 @@ class Compressor:
                     if ctx_bin[0:msb] == rcv_bin[0:msb]:
                         '''print(
                             "\t\t\t\t\t...it is a match on the first %d bits." % msb)'''
+                        fieldsMatchCheck[field_name] = True
                         matched = True
 
                 if matched == False:
+                    break
+
+            for field_name, field_value in fieldsMatchCheck.items():
+                if field_value != True:
+                    matched = False
                     break
 
             # Finally if the rule has matched it finishes, if not it keeps
@@ -214,6 +208,7 @@ class Compressor:
                 break
             else:
                 print("\t\tRule %d do not match." % i)
+                self.rule_found = False
             i += 1
 
     def compressPacket(self):
@@ -223,14 +218,17 @@ class Compressor:
             '''print("\n\t\tStart compressing packet with the rule %d...\n" %
                   self.rule_found_id)'''
 
+            self.header_order = self.header_order + self.coap_header_options
+
             # In this iterations the "compDecompFct" is analysed for each field
             # of the selected rule
-            for field_name, field_content in self.context[self.rule_found_id].items():
+            for order, field_name in enumerate(self.header_order):
                 '''print("\t\t\tfield %s :" % field_name)'''
 
                 # It is checked if the "compDecompFct" of the field contains
                 # "LSB"
-                reg = search('LSB\((.*)\)', field_content["compDecompFct"])
+                reg = search(
+                    'LSB\((.*)\)', self.context[self.rule_found_id][field_name]["compDecompFct"])
                 if reg:
 
                     # group(1) returns the first parenthesized subgroup
@@ -257,8 +255,9 @@ class Compressor:
 
                     # Binary to byte format
                     lsb_value = int(rcv_bin, 2)
-                    lsb_value = hexlify(
-                        lsb_value.to_bytes((lsb_value.bit_length() + 7) // 8, byteorder='big'))
+                    length = (bit_length(lsb_value) + 7) // 8
+                    lsb_value = lsb_value.to_bytes(length)
+                    lsb_value = hexlify(lsb_value)
                     self.compressed_header_fields[
                         field_name] = self.complete_field_zeros(lsb_value, lsb)
                     # print("\t\t\t\t%d lsb of %s are sent to the server, value is %s" % (
@@ -266,11 +265,11 @@ class Compressor:
                     # self.compressed_header_fields[field_name]))
 
                 reg = search(
-                    'mapping-sent\((.*)\)', field_content["compDecompFct"])
+                    'mapping-sent\((.*)\)', self.context[self.rule_found_id][field_name]["compDecompFct"])
                 if reg:
                     # The value matched is searched and the mapping ID is saved
 
-                    for mapping_id, mapping_value in field_content["targetValue"].items():
+                    for mapping_id, mapping_value in self.context[self.rule_found_id][field_name]["targetValue"].items():
                         if mapping_value == self.parsedHeaderFields[field_name]:
                             self.compressed_header_fields[
                                 field_name] = mapping_id
@@ -278,9 +277,19 @@ class Compressor:
 
                 # It is checked if the "compDecompFct" of the field contains
                 # "value-sent"
-                elif field_content["compDecompFct"] == "value-sent":
-                    self.compressed_header_fields[
-                        field_name] = self.parsedHeaderFields[field_name]
+                elif self.context[self.rule_found_id][field_name]["compDecompFct"] == "value-sent":
+
+                    # If an option_value is sent, the length is added as a
+                    # first byte to the data
+                    data = self.parsedHeaderFields[field_name]
+                    # Order is the field index number
+                    if(order >= 20):
+                        option_length = int(len(
+                            self.parsedHeaderFields[field_name]) / 2)
+                        data = b"".join(
+                            [hexlify(bytes([option_length]))[1:], data])
+
+                    self.compressed_header_fields[field_name] = data
                     '''print("\t\t\t\tfield content of %s is sent to the server, value is %s" % (
                         field_name, self.compressed_header_fields[field_name]))'''
 
@@ -288,6 +297,10 @@ class Compressor:
                 # All fields with compute-* are not sent
                 else:
                     '''print("\t\t\t\tfield elided.")'''
+                    if(order >= 20):
+                        # If not when appending the packet it wont find the
+                        # field and show an error
+                        self.compressed_header_fields[field_name] = ""
 
             # The selected ruled is also sent in the packet
             self.compressed_header_fields["rule"] = hexlify(
@@ -322,13 +335,15 @@ class Compressor:
 
     # For now minimum size for each field is a nibble (should be changed)
     def appendCompressedPacket(self):
-        self.compressed_packet = b""
+        self.compressed_packet = self.compressed_header_fields["rule"]
+
         # self.header_order is used to assure the header packet is formed in
         # the right order since the dictionaries order is not fixed
         for field_name in self.header_order:
             if type(self.compressed_header_fields[field_name]) == bytes:
                 self.compressed_packet = b"".join(
                     [self.compressed_packet, self.compressed_header_fields[field_name]])
+
         self.compressed_packet = b"".join(
             [self.compressed_packet, self.payload])
 
@@ -367,8 +382,7 @@ class Compressor:
             field = field[1:]
         return field
 
-
-def bit_length(self):
-    s = bin(self)       # binary representation:  bin(-37) --> '-0b100101'
+def bit_length(s):
+    s = bin(s)       # binary representation:  bin(-37) --> '-0b100101'
     s = s.lstrip('-0b')  # remove leading zeros and minus sign
     return len(s)
