@@ -40,9 +40,11 @@ class packet_generation:
         m = coap_message()
         # Fist 32 bits
         m.new_header(coap_type=NON,  code=POST,  token=10)
+        m.add_option_path('foo')
+        m.add_option_path('bar')
         # Payload Marker - only present if there is a payload
-        m.end_option()    # Payload
-        m.add_value(c)
+        m.end_option()
+        m.add_value(c)  # Payload
         #print("CoAP Message")
         # print(m.buffer)
 
