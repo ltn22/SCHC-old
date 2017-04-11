@@ -32,6 +32,109 @@ rule0 = {
         "compDecompFct": "not-sent"
     },
     "IP_payloadLength": {
+        "targetValue": '',
+        "matchingOperator": "ignore",
+        "compDecompFct": "compute-IPv6-length"
+    },
+    "IP_nextHeader": {
+        "targetValue": b"11",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "IP_hopLimit": {
+        "targetValue": b"40",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "IP_prefixES": {
+        "targetValue": b"20010db80a0b12f0",
+        "matchingOperator": "ignore",
+        "compDecompFct": "not-sent"
+    },
+    "IP_iidES": {
+        "targetValue": b"",
+        "matchingOperator": "ignore",
+        "compDecompFct": "ESiid-DID"
+    },
+    "IP_prefixLA": {
+        "targetValue": b"2d513de80a0b4df0",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "IP_iidLA": {
+        "targetValue": b"",
+        "matchingOperator": "ignore",
+        "compDecompFct": "LAiid-DID"
+    },
+    "UDP_PortES": {
+        "targetValue": b"1f90",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "UDP_PortLA": {
+        "targetValue": b"2382",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "UDP_length": {
+        "targetValue": '',
+        "matchingOperator": "ignore",
+        "compDecompFct": "compute-UDP-length"
+    },
+    "UDP_checksum": {
+        "targetValue": '',
+        "matchingOperator": "ignore",
+        "compDecompFct": "compute-UDP-checksum"
+    },
+    "CoAP_version": {
+        "targetValue": b"1",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "CoAP_type": {
+        "targetValue": b"1",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "CoAP_tokenLength": {
+        "targetValue": b"1",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "CoAP_code": {
+        "targetValue": b"02",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "CoAP_messageID": {
+        "targetValue": b"000",
+        "matchingOperator": "MSB(12)",
+        "compDecompFct": "LSB(4)"
+    },
+    "CoAP_token": {
+        "targetValue": '',
+        "matchingOperator": "ignore",
+        "compDecompFct": "value-sent"
+    }
+}
+
+rule1 = {
+    "IP_version": {
+        "targetValue": b"6",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "IP_trafficClass": {
+        "targetValue": b"00",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "IP_flowLabel": {
+        "targetValue": b"00000",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "IP_payloadLength": {
         "targetValue": "",
         "matchingOperator": "ignore",
         "compDecompFct": "compute-IPv6-length"
@@ -121,6 +224,16 @@ rule0 = {
         "targetValue": "",
         "matchingOperator": "ignore",
         "compDecompFct": "value-sent"
+    },
+    "CoAP_Uri-Path 1": {
+        "targetValue": b"666f6f",  # "foo"
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "CoAP_Uri-Path 2": {
+        "targetValue": "",
+        "matchingOperator": "ignore",
+        "compDecompFct": "value-sent"
     }
 }
 
@@ -136,6 +249,7 @@ parser = Parser()
 # Rules are loaded to the Compressor
 
 compressor.addRule(rule0)
+compressor.addRule(rule1)
 
 print("\n\t Rules created.")
 print("\t Contexts filled.\n")
@@ -160,7 +274,7 @@ while True:
     # COMPRESSION
 
     # Load the parsed header fields and the payload to the compressor
-    compressor.loadFromParser(parser.header_fields, parser.payload)
+    compressor.loadFromParser(parser.header_fields, parser.coap_header_options, parser.payload)
 
     # Search of matching rule in the context
     print("\t## Searching matching rule in context ##")
