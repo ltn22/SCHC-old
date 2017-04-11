@@ -147,203 +147,119 @@ An example of a rule format is shown. All fields should be included in a rule fo
 
 var rule0 = {
     "IP_version": {
-    
         "targetValue": "6",
-        
         "matchingOperator": "equal",
-        
-        "compDecompFct": "not-sent",
-        
+        "compDecompFct": "not-sent"
     },
-    
     "IP_trafficClass": {
-    
         "targetValue": "00",
-        
         "matchingOperator": "equal",
-        
-        "compDecompFct": "not-sent",
-        
+        "compDecompFct": "not-sent"
     },
-    
     "IP_flowLabel": {
-    
         "targetValue": "00000",
-        
         "matchingOperator": "equal",
-        
-        "compDecompFct": "not-sent",
-        
+        "compDecompFct": "not-sent"
     },
-    
     "IP_payloadLength": {
-    
         "targetValue": "",
-        
         "matchingOperator": "ignore",
-        
-        "compDecompFct": "compute-IPv6-length",
-        
+        "compDecompFct": "compute-IPv6-length"
     },
-    
     "IP_nextHeader": {
-    
         "targetValue": "11",
-        
         "matchingOperator": "equal",
-        
-        "compDecompFct": "not-sent",
-        
+        "compDecompFct": "not-sent"
     },
-    
     "IP_hopLimit": {
-    
         "targetValue": "40",
-        
         "matchingOperator": "equal",
-        
-        "compDecompFct": "not-sent",
-        
+        "compDecompFct": "not-sent"
     },
-    
     "IP_prefixES": {
-    
-        "targetValue": "20010db80a0b12f0",
-        
-        "matchingOperator": "ignore",
-        
-        "compDecompFct": "not-sent",
-        
+        "targetValue": {
+            "1": "20010db80a0b12f0",
+            "2": "2d513de80a0b4df0"
+        },
+        "matchingOperator": "match-mapping",
+        "compDecompFct": "mapping-sent(4)"
     },
-    
     "IP_iidES": {
-    
         "targetValue": "",
-        
-        "matchingOperator": "ignore",
-        
-        "compDecompFct": "ESiid-DID",
-        
+        "matchingOperator": "equal",
+        "compDecompFct": "ESiid-DID"
     },
-    
     "IP_prefixLA": {
-    
-        "targetValue": "2d513de80a0b4df0",
-        
-        "matchingOperator": "equal",
-        
-        "compDecompFct": "not-sent",
-        
+        "targetValue": {
+            "1": "20010db80a0b12f0",
+            "2": "2d513de80a0b4df0"
+        },
+        "matchingOperator": "match-mapping",
+        "compDecompFct": "mapping-sent(4)"
     },
-    
     "IP_iidLA": {
-    
         "targetValue": "",
-        
         "matchingOperator": "ignore",
-        
-        "compDecompFct": "LAiid-DID",
-        
+        "compDecompFct": "LAiid-DID"
     },
-    
-    
     "UDP_PortES": {
-    
         "targetValue": "1f90",
-        
         "matchingOperator": "equal",
-        
-        "compDecompFct": "not-sent",
-        
+        "compDecompFct": "not-sent"
     },
-    
     "UDP_PortLA": {
-    
         "targetValue": "2382",
-        
         "matchingOperator": "equal",
-        
-        "compDecompFct": "not-sent",
-        
+        "compDecompFct": "not-sent"
     },
-    
     "UDP_length": {
-    
         "targetValue": "",
-        
         "matchingOperator": "ignore",
-        
-        "compDecompFct": "compute-UDP-length",
-        
+        "compDecompFct": "compute-UDP-length"
     },
-    
     "UDP_checksum": {
-    
         "targetValue": "",
-        
         "matchingOperator": "ignore",
-        
-        "compDecompFct": "compute-UDP-checksum",
-        
+        "compDecompFct": "compute-UDP-checksum"
     },
-    
     "CoAP_version": {
-    
         "targetValue": "1",
-        
         "matchingOperator": "equal",
-        
-        "compDecompFct": "not-sent",
-        
+        "compDecompFct": "not-sent"
     },
-    
     "CoAP_type": {
-    
         "targetValue": "1",
-        
         "matchingOperator": "equal",
-        
-        "compDecompFct": "not-sent",
-        
+        "compDecompFct": "not-sent"
     },
-    
     "CoAP_tokenLength": {
-    
         "targetValue": "1",
-        
         "matchingOperator": "equal",
-        
-        "compDecompFct": "not-sent",
-        
+        "compDecompFct": "not-sent"
     },
-    
     "CoAP_code": {
-    
         "targetValue": "02",
-        
         "matchingOperator": "equal",
-        
-        "compDecompFct": "not-sent",
-        
+        "compDecompFct": "not-sent"
     },
-    
     "CoAP_messageID": {
-    
         "targetValue": "000",
-        
         "matchingOperator": "MSB(12)",
-        
-        "compDecompFct": "LSB(4)",
-        
+        "compDecompFct": "LSB(4)"
     },
-    
     "CoAP_token": {
-    
         "targetValue": "",
-        
         "matchingOperator": "ignore",
-        
-        "compDecompFct": "value-sent",
-        
+        "compDecompFct": "value-sent"
+    },
+    "CoAP_Uri-Path 1": {
+        "targetValue": "666f6f", // "foo"
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "CoAP_Uri-Path 2": {
+        "targetValue": "",
+        "matchingOperator": "ignore",
+        "compDecompFct": "value-sent"
     }
 };
