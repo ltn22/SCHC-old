@@ -4,7 +4,25 @@ Created on 2 mar. 2017
 @author: Philippe Clavier
 '''
 
-from binascii import hexlify
+from binascii import hexlify, unhexlify
+
+option_names = {
+    1: "CoAP_If-Match",
+    3: "CoAP_Uri-Host",
+    4: "CoAP_ETag",
+    5: "CoAP_If-None-Match",
+    7: "CoAP_Uri-Port",
+    8: "CoAP_Location-Path",
+    11: "CoAP_Uri-Path",
+    12: "CoAP_Content-Format",
+    14: "CoAP_Max-Age",
+    15: "CoAP_Uri-Query",
+    17: "CoAP_Accept",
+    20: "CoAP_Location-Query",
+    35: "CoAP_Proxy-Uri",
+    39: "CoAP_Proxy-Scheme",
+    60: "CoAP_Sizel"
+}
 
 
 class Parser:
@@ -125,9 +143,36 @@ class Parser:
         '''print("\t\t\tCoAP Token (decimal): %d" %
               int(self.header_fields["CoAP_token"], 16))'''
 
-        if(self.sepacketHexaContent[106:108] != b"ff"):
-            '''print("Here options should be parsed in the appropriate way")'''
-        else:
-            self.payload = self.sepacketHexaContent[108:]
+        start = 106
+        end = 107
+        option_number = 0
+        self.coap_header_options = []
 
-        # For now options will not be treated
+        while(self.sepacketHexaContent[start:end + 1] != b"ff"):
+            #print("Here options should be parsed in the appropriate way")
+            if option_number > 60:
+                print("error when parsing coap options")
+                break
+            option_position = 1
+            option_delta = int(self.sepacketHexaContent[start:end], 16)
+            option_number += option_delta
+            start += 1
+            end += 1
+            option_length = int(self.sepacketHexaContent[start:end], 16)
+            if option_length != 0:
+                start += 1
+                end += option_length * 2
+                option_value = self.sepacketHexaContent[start:end]
+                if option_delta == 0:
+                    option_position += 1
+                option_name = option_names[
+                    option_number] + " " + str(option_position)
+                self.header_fields[option_name] = option_value
+                self.coap_header_options.append(option_name)
+                start += option_length * 2
+                end += 1
+            else:
+                start += 1
+                end += 1
+        else:
+            self.payload = self.sepacketHexaContent[end + 1:]
