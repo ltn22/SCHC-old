@@ -36,6 +36,16 @@ cdf.prototype.initializeCD = function(){
         "UDP_length", "UDP_checksum", "CoAP_version", "CoAP_type", "CoAP_tokenLength",
         "CoAP_code", "CoAP_messageID", "CoAP_token"];
 
+    // Auxiliarys to order the options for every rule
+
+    this.options_order = {};
+
+    this.options_index = ["CoAP_If-Match", "CoAP_Uri-Host", "CoAP_ETag", "CoAP_If-None-Match", "CoAP_Uri-Port",
+        "CoAP_Location-Path", "CoAP_Uri-Path", "CoAP_Content-Format", "CoAP_Max-Age", "CoAP_Uri-Query",
+        "CoAP_Accept", "CoAP_Location-Query", "CoAP_Proxy-Uri", "CoAP_Proxy-Scheme", "CoAP_Sizel"];
+
+    this.repeatable_options = 10;
+
     // Values to be filled after the decompression of the packet received
     this.decompressed_header = {
         "IP_version": "",
@@ -59,9 +69,6 @@ cdf.prototype.initializeCD = function(){
         "CoAP_messageID": "",
         "CoAP_token": ""
     };
-
-    // Mapping ID length in bits(should be defined by a rule)
-    mapping_id_length = 8;
 
     // Decompressed fields sizes in bits
     this.field_size = {
@@ -89,7 +96,9 @@ cdf.prototype.initializeCD = function(){
 };
 
 cdf.prototype.addCompressionRule = function(rule){
-    this.context[this.context.length] = rule;
+    var index = this.context.length;
+    this.context[index] = rule;
+    this.options_order[index] = obtain_options_order(rule, this.options_index, this.repeatable_options)
 };
 
 cdf.prototype.loadIIDs = function(ESiid,LAiid){
@@ -103,13 +112,25 @@ cdf.prototype.parseCompressedPacket = function(received_compressed_packet){
     this.decompression_rule = rule;
     var index = 8; // In bits
 
+    this.header_order = this.header_order.concat(this.options_order[rule]);
+
     for(var item in this.header_order){
         var order = parseInt(item);
+
         if(this.header_order[order] === "CoAP_token"){
             this.field_size[this.header_order[order]] = parseInt(this.context[rule]["CoAP_tokenLength"]["targetValue"])*8;
         }
         if(this.context[rule][this.header_order[order]]["compDecompFct"] === "value-sent"){
-            var length_bits = this.field_size[this.header_order[order]];
+            // After the header number 20 the options start
+            // CoAP option length is sent first
+            if (order >= 20){
+                var option_length = obtain_compressed_field(index, 4,received_compressed_packet);
+                var length_bits = parseInt(option_length)*8;
+                index += 4;
+            }
+            else{
+                var length_bits = this.field_size[this.header_order[order]];
+            }
             var field_data = obtain_compressed_field(index, length_bits,received_compressed_packet);
             this.decompressed_header[this.header_order[order]] = complete_field_zeros(field_data,length_bits);
             index += length_bits;
@@ -132,6 +153,7 @@ cdf.prototype.parseCompressedPacket = function(received_compressed_packet){
             index += length_bits;
         }
     }
+
     this.received_payload = received_compressed_packet.slice(index/4,received_compressed_packet.length);
 };
 
@@ -139,69 +161,70 @@ cdf.prototype.decompressHeader = function(){
     var decompression_rule = this.decompression_rule;
     console.log("\n\t\tStart decompressing packet with the rule " + decompression_rule + " ...\n");
     // for field_name, field_content in self.decompressed_header.items()
-    for(var field_name in this.decompressed_header) {
-        console.log("\t\t\tfield " + field_name + " :");
+    for(var item in this.header_order){
+        var order = parseInt(item);
+        console.log("\t\t\tfield " + this.header_order[order] + " :");
         // It checks if the CDF for that field is "not-sent" according to the rule received
-        if (this.context[decompression_rule][field_name]["compDecompFct"] === "not-sent") {
+        if (this.context[decompression_rule][this.header_order[order]]["compDecompFct"] === "not-sent") {
             // If it is the decompressed value of the field will be the "tagetValue" from that field of the rule received
-            this.decompressed_header[field_name] = this.context[decompression_rule][field_name]["targetValue"];
+            this.decompressed_header[this.header_order[order]] = this.context[decompression_rule][this.header_order[order]]["targetValue"];
             // This is PROVISIONAL as the whole nibble is checked for the matach and so is how the rule is defined
             /*
-            if(field_name === "CoAP_version"){
-                this.decompressed_header[field_name] = (12 & this.decompressed_header[field_name]) >>> 2;
-            }
-            else if(field_name === "CoAP_type"){
-                this.decompressed_header[field_name] = 3 & this.decompressed_header[field_name] ;
-            }
-            */
-            console.log("\t\t\t\tdecompressed " + field_name + " is " + this.decompressed_header[field_name] +
+             if(this.header_order[order] === "CoAP_version"){
+             this.decompressed_header[this.header_order[order]] = (12 & this.decompressed_header[this.header_order[order]]) >>> 2;
+             }
+             else if(this.header_order[order] === "CoAP_type"){
+             this.decompressed_header[this.header_order[order]] = 3 & this.decompressed_header[this.header_order[order]] ;
+             }
+             */
+            console.log("\t\t\t\tdecompressed " + this.header_order[order] + " is " + this.decompressed_header[this.header_order[order]] +
                 " (retrieved from the context)");
         }
         // It checks if the CDF for that field is "value-sent" according to the rule received
-        else if (this.context[decompression_rule][field_name]["compDecompFct"] === "value-sent") {
+        else if (this.context[decompression_rule][this.header_order[order]]["compDecompFct"] === "value-sent") {
             // If it is the decompressed value of the field will be the same
             // as the compressed value (which has not been compressed)
-            console.log("\t\t\t\tdecompressed " + field_name + " is " + this.decompressed_header[field_name] +
+            console.log("\t\t\t\tdecompressed " + this.header_order[order] + " is " + this.decompressed_header[this.header_order[order]] +
                 " (retrieved from the link)");
         }
         // ESiid and LAiid must be obtained correctly from L2 but for now it will be used the TV
-        else if (this.context[decompression_rule][field_name]["compDecompFct"] === "ESiid-DID") {
-            this.decompressed_header[field_name] = this.ESiid;
-            console.log("\t\t\t\tdecompressed " + field_name + " is " + this.decompressed_header[field_name] +
+        else if (this.context[decompression_rule][this.header_order[order]]["compDecompFct"] === "ESiid-DID") {
+            this.decompressed_header[this.header_order[order]] = this.ESiid;
+            console.log("\t\t\t\tdecompressed " + this.header_order[order] + " is " + this.decompressed_header[this.header_order[order]] +
                 " (retrieved from L2)");
         }
-        else if (this.context[decompression_rule][field_name]["compDecompFct"] === "LAiid-DID") {
-            this.decompressed_header[field_name] = this.LAiid;
-            console.log("\t\t\t\tdecompressed " + field_name + " is " + this.decompressed_header[field_name] +
+        else if (this.context[decompression_rule][this.header_order[order]]["compDecompFct"] === "LAiid-DID") {
+            this.decompressed_header[this.header_order[order]] = this.LAiid;
+            console.log("\t\t\t\tdecompressed " + this.header_order[order] + " is " + this.decompressed_header[this.header_order[order]] +
                 " (retrieved from L2)");
         }
-        var condition = /mapping-sent\((.*)\)/.test(this.context[decompression_rule][field_name]["compDecompFct"]);
+        var condition = /mapping-sent\((.*)\)/.test(this.context[decompression_rule][this.header_order[order]]["compDecompFct"]);
         if (condition){
             // The received field is the key in the Target Value for the true value
-            var key = this.decompressed_header[field_name];
-            this.decompressed_header[field_name] = this.context[decompression_rule][field_name]["targetValue"][key];
+            var key = this.decompressed_header[this.header_order[order]];
+            this.decompressed_header[this.header_order[order]] = this.context[decompression_rule][this.header_order[order]]["targetValue"][key];
 
-            console.log("\t\t\t\tdecompressed " + field_name + " is " + this.decompressed_header[field_name] +
+            console.log("\t\t\t\tdecompressed " + this.header_order[order] + " is " + this.decompressed_header[this.header_order[order]] +
                 " (retrieved from the mapping-sent)");
         }
         // It checks if the CDF for that field is "LSB" according to the rule received
-        var condition = /LSB\((.*)\)/.test(this.context[decompression_rule][field_name]["compDecompFct"]);
+        var condition = /LSB\((.*)\)/.test(this.context[decompression_rule][this.header_order[order]]["compDecompFct"]);
         if (condition){
             // The number of LSB to be used is obtained from the rule
-            var reg = this.context[decompression_rule][field_name]["compDecompFct"].match(/LSB\((.*)\)/);
+            var reg = this.context[decompression_rule][this.header_order[order]]["compDecompFct"].match(/LSB\((.*)\)/);
             var lsb = parseInt(reg[1]);
             // The MSBs value is obtained from the "targetValue" of the field from that rule
-            var msb_value = parseInt(this.context[decompression_rule][field_name]["targetValue"], 16);
+            var msb_value = parseInt(this.context[decompression_rule][this.header_order[order]]["targetValue"], 16);
             // The received LSBs value
-            var lsb_value = parseInt(this.decompressed_header[field_name], 16);
+            var lsb_value = parseInt(this.decompressed_header[this.header_order[order]], 16);
             // The MSB and LSB are merged with an OR to obtain the final value
             var field_value = (msb_value << lsb) | lsb_value;
             // The final value is expressed in hexa string
             field_value = field_value.toString(16);
-            this.decompressed_header[field_name] = complete_field_zeros(field_value,this.field_size[field_name]);
-            msb = this.field_size[field_name] - lsb;
+            this.decompressed_header[this.header_order[order]] = complete_field_zeros(field_value,this.field_size[this.header_order[order]]);
+            msb = this.field_size[this.header_order[order]] - lsb;
             console.log('\t\t\t\tdecompressed %s is %s (retrieved from the context (%d MSB) and from the link (%d LSB))'
-                , field_name, this.decompressed_header[field_name], msb, lsb);
+                , this.header_order[order], this.decompressed_header[this.header_order[order]], msb, lsb);
         }
     }
     // Now the fields with the compute-* function must be obtained
@@ -319,4 +342,24 @@ function obtain_compressed_field(index, length_bits,compPacket){
     field_data = field_data & (Math.pow(2, length_bits)-1); // Mask
     field_data = field_data.toString(16);
     return field_data;
+}
+
+function obtain_options_order(rule, options_index, repeatable_options){
+    var options_order = [];
+
+    for (var field_name in rule){
+        for (var k in options_index){
+            var re = new RegExp(options_index[k]+"\\s(\\d*)"); //  ,"\\s\(\\d*\)"
+            var condition = re.test(field_name);
+            if (condition){
+                var reg = re.exec(field_name);
+                options_order.push([field_name, k * repeatable_options + parseInt(reg[1]) -1]);
+            }
+        }
+    }
+    options_order.sort(function(a, b){return a[1]-b[1]});
+    for (var k in options_order){
+        options_order[k] = options_order[k][0];
+    }
+    return options_order
 }
