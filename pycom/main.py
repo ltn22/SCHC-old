@@ -1,21 +1,126 @@
 '''
 Created on 6 mar. 2017
 
-@author: Philippe Clavier
+@author: pclavier
 '''
 
-from network import LoRa
-import socket
+import pycom
 import time
+import socket
 import binascii
-from packet_generator import packet_generation
+from network import LoRa
 from Parser import Parser
 from Compressor import Compressor
-import pycom
+from packet_generator import packet_generation
 
 # The rules to be used are defined
 
+# print("\n\t## Rules definition ###")
+
 rule0 = {
+    "IP_version": {
+        "targetValue": b"6",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "IP_trafficClass": {
+        "targetValue": b"00",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "IP_flowLabel": {
+        "targetValue": b"00000",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "IP_payloadLength": {
+        "targetValue": '',
+        "matchingOperator": "ignore",
+        "compDecompFct": "compute-IPv6-length"
+    },
+    "IP_nextHeader": {
+        "targetValue": b"11",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "IP_hopLimit": {
+        "targetValue": b"40",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "IP_prefixES": {
+        "targetValue": b"20010db80a0b12f0",
+        "matchingOperator": "ignore",
+        "compDecompFct": "not-sent"
+    },
+    "IP_iidES": {
+        "targetValue": b"",
+        "matchingOperator": "ignore",
+        "compDecompFct": "ESiid-DID"
+    },
+    "IP_prefixLA": {
+        "targetValue": b"2d513de80a0b4df0",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "IP_iidLA": {
+        "targetValue": b"",
+        "matchingOperator": "ignore",
+        "compDecompFct": "LAiid-DID"
+    },
+    "UDP_PortES": {
+        "targetValue": b"1f90",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "UDP_PortLA": {
+        "targetValue": b"2382",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "UDP_length": {
+        "targetValue": '',
+        "matchingOperator": "ignore",
+        "compDecompFct": "compute-UDP-length"
+    },
+    "UDP_checksum": {
+        "targetValue": '',
+        "matchingOperator": "ignore",
+        "compDecompFct": "compute-UDP-checksum"
+    },
+    "CoAP_version": {
+        "targetValue": b"1",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "CoAP_type": {
+        "targetValue": b"1",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "CoAP_tokenLength": {
+        "targetValue": b"1",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "CoAP_code": {
+        "targetValue": b"02",
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "CoAP_messageID": {
+        "targetValue": b"000",
+        "matchingOperator": "MSB(12)",
+        "compDecompFct": "LSB(4)"
+    },
+    "CoAP_token": {
+        "targetValue": '',
+        "matchingOperator": "ignore",
+        "compDecompFct": "value-sent"
+    }
+}
+
+rule1 = {
     "IP_version": {
         "targetValue": b"6",
         "matchingOperator": "equal",
@@ -59,7 +164,7 @@ rule0 = {
         "matchingOperator": "ignore",
         "compDecompFct": "ESiid-DID"
     },
-   "IP_prefixLA": {
+    "IP_prefixLA": {
         "targetValue": {
             b"1": b"20010db80a0b12f0",
             b"2": b"2d513de80a0b4df0",
@@ -121,18 +226,30 @@ rule0 = {
         "targetValue": "",
         "matchingOperator": "ignore",
         "compDecompFct": "value-sent"
+    },
+    "CoAP_Uri-Path 1": {
+        "targetValue": b"666f6f",  # "foo"
+        "matchingOperator": "equal",
+        "compDecompFct": "not-sent"
+    },
+    "CoAP_Uri-Path 2": {
+        "targetValue": "",
+        "matchingOperator": "ignore",
+        "compDecompFct": "value-sent"
     }
 }
 
-
 # Elements instantiation
 
-# The compressor is initialized
-compressor = Compressor()
+# print("\n\t## Elements instantiation ###")
 
+compressor = Compressor()
+#print("\t\t Compressor (LC) A instantiated.")
 
 # Rules are loaded to the Compressor
+
 compressor.addRule(rule0)
+compressor.addRule(rule1)
 
 # The packet generator is initialized
 packet = packet_generation()
@@ -149,9 +266,6 @@ app_key = binascii.unhexlify(
 lora.join(activation=LoRa.OTAA, auth=(app_eui, app_key), timeout=0)
 
 # wait until the module has joined the network
-
-print("The module is joining the network")
-
 while not lora.has_joined():
     time.sleep(2.5)
     print('Not yet joined...')
@@ -163,11 +277,9 @@ s = socket.socket(socket.AF_LORA, socket.SOCK_RAW)
 s.setsockopt(socket.SOL_LORA, socket.SO_DR, 5)
 
 s.bind(1)
-
-# send some data
 pycom.heartbeat(False)
 
-##############################################
+##############################################################
 # Main program starts here
 
 lora_buffer = []
@@ -179,22 +291,25 @@ while True:
     print("\n\t## IPv6/UDP/CoAP Message to be sent")
     print("\t\t", packet.buffer)
 
-    # PARSING
+    # PARSING THE MESSAGE TO BE SENT
 
     # Parsing the packet to be analysed by the Compressor
+    # print("\n\t## Beginning of parsing ##")
     parser = Parser()
     parser.parser(packet.buffer)
 
     # COMPRESSION
-    
+
     # Load the parsed header fields and the payload to the compressor
-    compressor.loadFromParser(parser.header_fields, parser.payload)
+    compressor.loadFromParser(
+        parser.header_fields, parser.coap_header_options, parser.payload)
 
     # Search of matching rule in the context
     print("\t## Searching matching rule in context ##")
     compressor.analyzePacketToSend()
 
     # Compression of the packet to send
+    # print("\t## Compression of the packet to send ##")
     compressor.compressPacket()
 
     # Sending compressed packet
