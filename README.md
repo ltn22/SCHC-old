@@ -2,7 +2,7 @@ SCHC (pronounced chic) is the compression mechanism for LPWAN networks standardi
 
 --- abstract
 
-This implementation deals with the way in which Static Context Header Compression can be applied to IPv6/UDP/CoAP headers in an LPWAN flow regarding the generated traffic. 
+This implementation deals with the way in which Static Context Header Compression can be applied to CoAP/UDP/IPv6 headers in an LPWAN flow regarding the generated traffic. 
 
 This specific application was developed for LoRaWAN with end-devices of class A (bi-directional end-devices).   
 
