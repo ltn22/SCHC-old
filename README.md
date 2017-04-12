@@ -132,14 +132,7 @@ The folder *“javascript\examples”* contains a script called *“decompressio
 
 # Limitation
 
-The implementation has several limitations that will be taken care of in the near future. 
-
-For the moment the compressor does not support:
-- Downlink communication.
-- The “remapping” Compression-Decompression Function.
-- The use of CoAP Options in the CoAP header.
-
-Tackling these limitations are the next steps in making a fully functional implementation of the SCHC for LoRAWAN.
+For the moment the compressor does not support downlink communication. Tackling this limitation is the next steps in making a fully functional implementation of the SCHC for LoRAWAN.
 
 # Appendix - Rule Format
 
