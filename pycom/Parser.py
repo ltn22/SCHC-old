@@ -11,6 +11,7 @@ option_names = {
     3: "CoAP_Uri-Host",
     4: "CoAP_ETag",
     5: "CoAP_If-None-Match",
+    6: "CoAP_Observe",
     7: "CoAP_Uri-Port",
     8: "CoAP_Location-Path",
     11: "CoAP_Uri-Path",
@@ -19,9 +20,13 @@ option_names = {
     15: "CoAP_Uri-Query",
     17: "CoAP_Accept",
     20: "CoAP_Location-Query",
+    23: "CoAP_Block2",
+    27: "CoAP_Block1",
+    28: "CoAP_Size2",
     35: "CoAP_Proxy-Uri",
     39: "CoAP_Proxy-Scheme",
-    60: "CoAP_Sizel"
+    60: "CoAP_Sizel",
+    258: "CoAP_No-Response"
 }
 
 
