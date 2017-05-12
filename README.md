@@ -70,21 +70,96 @@ For every packet to be sent the following functions should be used:
    
 The compressed header packet can then be accessed through the variable *"compressor.compressed_packet"*.
 
-Two more auxiliary modules were made for simulating the generation of packets that follow the basic rule proposed to be compressed. 
-To use this, the class *“packet_generation”* should be imported from the module *“packet_generator”* and the a class has to be created:
+## Decompression (ES)
 
-      from packet_generator import packet_generation
-      packet = packet_generation()
+For the decompression in the ES the Python module *“Decompressor.py”* was developed. These can be found in the folder *“pycom”*. 
 
-It is then possible to generate IPv6/UDP/CoAP packets that follow the basic rule proposed using the following function:
+To use this module for compression the following steps should be followed:
 
-      packet.generate_packet()
+1. Import the *“Parser”* and *“Compressor”* classes from the modules.
 
-The generated packet will be stored in *"packet.buffer"*
+    *from Compressor import Decompressor*
 
-The implementation of the compressor was done in a LoPY and the *“main.py”* shows an example of how to use this device to send previously compressed packets over LoRaWAN.
+2. Create these classes to initialize the parser, the compressor and the packet generator.
+
+   *decompressor = decompressor()*
+
+3. Define the rules following its given format. The format for Python is the following:
+4. Add the rules to be used (For the moment, the rules should be added in their correponding oreder, matching the context of the compressor in the ES).
+
+	*decompressor.addRule(rule0)*
+
+Now the Compressor-Decompressor is all set up and ready to decompress received packets.
+For every packet received the following methods should be used in order:
+
+6. The compressed packet received has to be loaded to the Compressor-Decompressor. In this method, the compressed packet is parsed into the rule, the values sent for the fields that have to receive something according to the rule and the payload.
+    
+    *decompressor.parseCompressedPacket(compressedPacket);*
+
+7. The IPv6 IIDs depending on the rule could be obtained from L2, in this case the following method should be used to load the ES and LA IIDs to the Compressor-Decompressor.
+
+    *decompressor.loadIIDs(ESiid,LAiid);*
+
+8. Following the context of the rule received the decompression can be executed.
+
+    *decompressor.decompressHeader();*
+
+After the decompression, the decompressed header can then be accessed through the variable *"decompressor.decompressed_header"*.
+
+The implementation of the compressor was done in a LoPY and the *“main.py”* shows an example of how to use this device to send previously compressed packets over LoRaWAN and receive compressed packet that are then decompressed.
 
 The folder *“pycom\test”* contains a script called *“testing.py”* that can be used to test the compression of different packets that follow a basic rule loaded as *“rule0”*. Other rules can be added following the rule format.
+
+## Compression (LC)
+
+For the compression in the LC a Javascript module was developed. This can be found in the folder *“javascript\lib”* with the name *“schc_cd.js”*.
+
+To use this module for decompression the following steps should be followed:
+
+1. Import the modules.
+
+    *var Parser = require('./parser');*
+    *var Compressor_Decompressor = require('../lib/schc_cd');*
+    
+2. Create a new object for the Parser and the Compressor-Decompressor.
+
+    *var parser = new Parser();*
+    *var CD = new Compressor_Decompressor;*
+
+3. Load the initial values to the Compressor-Decompressor.
+
+    *CD.initializeCD();*
+
+4. Rules should be previously defined following the given format. 
+5. Add the rules to be used (For the moment, the rules should be added in their correponding oreder, matching the context of the compressor in the ES).
+
+    *CD.addRule(rule);*
+
+Now the Compressor is all set up and ready to compress packets to be sent.
+
+For every packet to be sent the following functions should be used:   
+
+5. The packet to be sent has to be parsed first to obtain each value of the header fields before the compressor handles it.
+
+   *parser.parser(packet)*
+
+6. Once the packet has been parsed, the values of the header fields obtained, a list of the CoAP options in the header and the payload must be loaded to the compressor from the parser.
+    
+    *CD.loadFromParser(parser.header_fields, parser.coap_header_options, parser.payload)*
+
+7. Then the compressor analyses the header fields and looks for a rule that matches for compression.
+
+   *CD.analyzePacketToSend()*
+
+8. If a rule is found that matches for all the header fields of the packet the compression can be done following that rule.
+
+   *CD.compressPacket()*
+
+9. To obtain the compressed packet with the header fields appended and ready to be sent, the function *“returnCompressedPacket()”* can be called.
+
+   *CD.appendCompressedPacket()*
+   
+The compressed header packet can then be accessed through the variable *"CD.compressed_packet"*.
 
 ## Decompression (LC)
 
