@@ -16,7 +16,7 @@ import socket
 
 # The rules to be used are defined
 
-# print("\n\t## Rules definition ###")
+print("\n\t## Rules definition ###")
 
 rule0 = {
     "IP_version": {
@@ -134,7 +134,7 @@ rule0 = {
         "direction": "bi"
     },
     "CoAP_messageID": {
-        "targetValue": "000000000000",  # ESTO TIENE QUE ESTAR EN BITS
+        "targetValue": "000000000000",
         "matchingOperator": "MSB(12)",
         "compDecompFct": "LSB(4)",
         "direction": "bi"
@@ -161,20 +161,17 @@ rule0 = {
 
 # Elements instantiation
 
-# print("\n\t## Elements instantiation ###")
+print("\n\t## Elements instantiation ###")
 compressor = Compressor()
 decompressor = Decompressor()
-
-#print("\t\t Compressor_nibbles (LC) A instantiated.")
 
 # Rules are loaded to the Compressor_nibbles
 
 compressor.addRule(rule0)
 decompressor.addRule(rule0)
 
-#print("\n\t Rules created.")
-#print("\t Contexts filled.\n")
-#compressor.printContext()
+print("\n\t Rules created.")
+print("\t Contexts filled.\n")
 
 # The packet generator is initialized
 packet = {}
@@ -201,10 +198,6 @@ s = socket.socket(socket.AF_LORA, socket.SOCK_RAW)
 
 # set the LoRaWAN data rate
 s.setsockopt(socket.SOL_LORA, socket.SO_DR, 5)
-
-#print("apres setsock")
-# make the socket blocking
-# (waits for the data to be sent and for the 2 receive windows to expire)
 
 s.bind(1)
 
@@ -235,7 +228,7 @@ while True:
     # PARSING THE MESSAGE TO BE SENT
 
     # Parsing the packet to be analysed by the Compressor_nibbles
-    # print("\n\t## Beginning of parsing ##")
+    print("\n\t## Beginning of parsing ##")
     parser = Parser()
     parser.parser(packet_buffer)
 
@@ -250,7 +243,7 @@ while True:
     compressor.analyzePacketToSend()
 
     # Compression of the packet to send
-    # print("\t## Compression of the packet to send ##")
+    print("\t## Compression of the packet to send ##")
     compressor.compressPacket()
 
     # Sending compressed packet
