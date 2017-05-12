@@ -1,7 +1,6 @@
 '''
 Created on 6 mar. 2017
 @author: Philippe Clavier
-Made for testing, cleaning and debugging 
 '''
 
 import time
