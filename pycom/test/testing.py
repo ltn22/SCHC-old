@@ -129,7 +129,7 @@ rule0 = {
         "direction": "bi"
     },
     "CoAP_messageID": {
-        "targetValue": "000000000000",  # ESTO TIENE QUE ESTAR EN BITS
+        "targetValue": "000000000000",
         "matchingOperator": "MSB(12)",
         "compDecompFct": "LSB(4)",
         "direction": "bi"
@@ -168,7 +168,6 @@ decompressor.addRule(rule0)
 
 print("\n\t Rules created.")
 print("\t Contexts filled.\n")
-# compressor.printContext()
 
 # The packet generator is initialized
 packet = {}
@@ -177,7 +176,6 @@ packet_payload = 0
 
 while True:
     # A IPv6/UDP/CoAP packet is generated
-    # packet.generate_packet()
 
     if packet_payload < 255:
         packet_payload += 1
