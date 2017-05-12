@@ -138,144 +138,282 @@ For the moment the compressor does not support downlink communication. Tackling 
 
 An example of a rule format is shown. All fields should be included in a rule for a propper compression/decompression. Note that this example of rule is for Javascript where the "targetValue" of each field is a string, for the Python code the "targetValue" should be expressed in bytes literals (b' ').
 
-var rule0 = {
-    "IP_version": {
-        "targetValue": "6",
-        "matchingOperator": "equal",
-        "compDecompFct": "not-sent",
-        "direction": "bi"
-    },
-    "IP_trafficClass": {
-        "targetValue": "00",
-        "matchingOperator": "equal",
-        "compDecompFct": "not-sent",
-        "direction": "bi"
-    },
-    "IP_flowLabel": {
-        "targetValue": "00000",
-        "matchingOperator": "equal",
-        "compDecompFct": "not-sent",
-        "direction": "bi"
-    },
-    "IP_payloadLength": {
-        "targetValue": "",
-        "matchingOperator": "ignore",
-        "compDecompFct": "compute-IPv6-length",
-        "direction": "bi"
-    },
-    "IP_nextHeader": {
-        "targetValue": "11",
-        "matchingOperator": "equal",
-        "compDecompFct": "not-sent",
-        "direction": "bi"
-    },
-    "IP_hopLimit": {
-        "targetValue": "40",
-        "matchingOperator": "equal",
-        "compDecompFct": "not-sent",
-        "direction": "bi"
-    },
-    "IP_prefixES": {
-        "targetValue": {
-            "1": "20010db80a0b12f0",
-            "2": "2d513de80a0b4df0"
-        },
-        "matchingOperator": "match-mapping",
-        "compDecompFct": "mapping-sent(4)",
-        "direction": "bi"
-    },
-    "IP_iidES": {
-        "targetValue": "",
-        "matchingOperator": "ignore",
-        "compDecompFct": "ESiid-DID",
-        "direction": "bi"
-    },
-    "IP_prefixLA": {
-        "targetValue": {
-            "1": "20010db80a0b12f0",
-            "2": "2d513de80a0b4df0",
-        },
-        "matchingOperator": "match-mapping",
-        "compDecompFct": "mapping-sent(4)",
-        "direction": "bi"
-    },
-    "IP_iidLA": {
-        "targetValue": "",
-        "matchingOperator": "ignore",
-        "compDecompFct": "LAiid-DID",
-        "direction": "bi"
-    },
-    "UDP_PortES": {
-        "targetValue": "1f90",
-        "matchingOperator": "equal",
-        "compDecompFct": "not-sent",
-        "direction": "bi"
-    },
-    "UDP_PortLA": {
-        "targetValue": "2382",
-        "matchingOperator": "equal",
-        "compDecompFct": "not-sent",
-        "direction": "bi"
-    },
-    "UDP_length": {
-        "targetValue": "",
-        "matchingOperator": "ignore",
-        "compDecompFct": "compute-UDP-length",
-        "direction": "bi"
-    },
-    "UDP_checksum": {
-        "targetValue": "",
-        "matchingOperator": "ignore",
-        "compDecompFct": "compute-UDP-checksum",
-        "direction": "bi"
-    },
-    "CoAP_version": {
-        "targetValue": "1",
-        "matchingOperator": "equal",
-        "compDecompFct": "not-sent",
-        "direction": "bi"
-    },
-    "CoAP_type": {
-        "targetValue": "1",
-        "matchingOperator": "equal",
-        "compDecompFct": "not-sent",
-        "direction": "bi"
-    },
-    "CoAP_tokenLength": {
-        "targetValue": "1",
-        "matchingOperator": "equal",
-        "compDecompFct": "not-sent",
-        "direction": "bi"
-    },
-    "CoAP_code": {
-        "targetValue": "02",
-        "matchingOperator": "equal",
-        "compDecompFct": "not-sent",
-        "direction": "bi"
-    },
-    "CoAP_messageID": {
-        "targetValue": "000000000000",
-        "matchingOperator": "MSB(12)",
-        "compDecompFct": "LSB(4)",
-        "direction": "bi"
-    },
-    "CoAP_token": {
-        "targetValue": "",
-        "matchingOperator": "ignore",
-        "compDecompFct": "value-sent",
-        "direction": "bi"
-    },
-    "CoAP_Uri-Path 1": {
-        "targetValue": "b3666f6f",  // "foo"
-        "matchingOperator": "equal",
-        "compDecompFct": "not-sent",
-        "direction": "bi"
-    },
-    "CoAP_Uri-Path 2": {
-        "targetValue": "",
-        "matchingOperator": "ignore",
-        "compDecompFct": "value-sent",
-        "direction": "bi"
-    }
-};
+    var rule0 = {
 
+    "IP_version": {
+    
+        "targetValue": "6",
+	
+        "matchingOperator": "equal",
+	
+        "compDecompFct": "not-sent",
+	
+        "direction": "bi"
+	
+    },
+    
+    "IP_trafficClass": {
+    
+        "targetValue": "00",
+	
+        "matchingOperator": "equal",
+	
+        "compDecompFct": "not-sent",
+	
+        "direction": "bi"
+	
+    },
+    
+    "IP_flowLabel": {
+    
+        "targetValue": "00000",
+	
+        "matchingOperator": "equal",
+	
+        "compDecompFct": "not-sent",
+	
+        "direction": "bi"
+	
+    },
+    
+    "IP_payloadLength": {
+   
+    "targetValue": "",
+    
+        "matchingOperator": "ignore",
+	
+        "compDecompFct": "compute-IPv6-length",
+	
+        "direction": "bi"
+	
+    },
+    
+    "IP_nextHeader": {
+    
+        "targetValue": "11",
+	
+        "matchingOperator": "equal",
+	
+        "compDecompFct": "not-sent",
+	
+        "direction": "bi"
+	
+    },
+    
+    "IP_hopLimit": {
+    
+        "targetValue": "40",
+	
+        "matchingOperator": "equal",
+	
+        "compDecompFct": "not-sent",
+	
+        "direction": "bi"
+	
+    },
+    
+    "IP_prefixES": {
+    
+        "targetValue": {
+	
+            "1": "20010db80a0b12f0",
+	    
+            "2": "2d513de80a0b4df0"
+	    
+        },
+	
+        "matchingOperator": "match-mapping",
+	
+        "compDecompFct": "mapping-sent(4)",
+	
+        "direction": "bi"
+	
+    },
+    
+    "IP_iidES": {
+    
+        "targetValue": "",
+	
+        "matchingOperator": "ignore",
+	
+        "compDecompFct": "ESiid-DID",
+	
+        "direction": "bi"
+	
+    },
+    
+    "IP_prefixLA": {
+    
+        "targetValue": {
+	
+            "1": "20010db80a0b12f0",
+	    
+            "2": "2d513de80a0b4df0",
+	    
+        },
+	
+        "matchingOperator": "match-mapping",
+	
+        "compDecompFct": "mapping-sent(4)",
+	
+       	"direction": "bi"
+	
+    },
+    
+    "IP_iidLA": {
+    
+        "targetValue": "",
+	
+        "matchingOperator": "ignore",
+	
+        "compDecompFct": "LAiid-DID",
+	
+        "direction": "bi"
+	
+    },
+    
+    "UDP_PortES": {
+    
+        "targetValue": "1f90",
+	
+        "matchingOperator": "equal",
+	
+        "compDecompFct": "not-sent",
+	
+        "direction": "bi"
+	
+    },
+    
+    "UDP_PortLA": {
+    
+        "targetValue": "2382",
+	
+        "matchingOperator": "equal",
+	
+        "compDecompFct": "not-sent",
+	
+        "direction": "bi"
+	
+    },
+    
+    "UDP_length": {
+    
+        "targetValue": "",
+	
+        "matchingOperator": "ignore",
+	
+        "compDecompFct": "compute-UDP-length",
+	
+        "direction": "bi"
+	
+    },
+    
+    "UDP_checksum": {
+    
+        "targetValue": "",
+	
+        "matchingOperator": "ignore",
+	
+        "compDecompFct": "compute-UDP-checksum",
+	
+        "direction": "bi"
+	
+    },
+    
+    "CoAP_version": {
+    
+        "targetValue": "1",
+	
+        "matchingOperator": "equal",
+	
+        "compDecompFct": "not-sent",
+	
+        "direction": "bi"
+	
+    },
+    
+    "CoAP_type": {
+    
+        "targetValue": "1",
+	
+        "matchingOperator": "equal",
+	
+        "compDecompFct": "not-sent",
+	
+        "direction": "bi"
+	
+    },
+    
+    "CoAP_tokenLength": {
+    
+        "targetValue": "1",
+	
+        "matchingOperator": "equal",
+	
+        "compDecompFct": "not-sent",
+	
+        "direction": "bi"
+	
+    },
+    
+    "CoAP_code": {
+    
+        "targetValue": "02",
+	
+        "matchingOperator": "equal",
+	
+        "compDecompFct": "not-sent",
+	
+        "direction": "bi"
+	
+    },
+    
+    "CoAP_messageID": {
+    
+        "targetValue": "000000000000",
+	
+        "matchingOperator": "MSB(12)",
+	
+        "compDecompFct": "LSB(4)",
+	
+        "direction": "bi"
+	
+    },
+    
+    "CoAP_token": {
+    
+        "targetValue": "",
+	
+        "matchingOperator": "ignore",
+	
+        "compDecompFct": "value-sent",
+	
+        "direction": "bi"
+	
+    },
+    
+    "CoAP_Uri-Path 1": {
+    
+        "targetValue": "b3666f6f",  // "foo"
+	
+        "matchingOperator": "equal",
+	
+        "compDecompFct": "not-sent",
+	
+        "direction": "bi"
+	
+    },
+    
+    "CoAP_Uri-Path 2": {
+    
+        "targetValue": "",
+	
+        "matchingOperator": "ignore",
+	
+        "compDecompFct": "value-sent",
+	
+        "direction": "bi"
+	
+    }
+    
+};
