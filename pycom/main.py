@@ -216,7 +216,7 @@ packet_payload = 1
 while True:
     # A IPv6/UDP/CoAP packet is generated
     if packet_payload < 255:
-        packet_payload += 1
+        packet_payload += 2
     else:
         packet_payload = 1
 
