@@ -6,25 +6,15 @@ Created on 2 mar. 2017
 
 from re import search
 from binascii import hexlify
+from builtins import enumerate
 
 
 class Compressor:
 
     def __init__(self):
 
-        # The context will store the rules that can be used for a compression
         self.context = []
-
-        # Header received from the EndSystem
         self.parsedHeaderFields = {}
-
-        # Received compressed packet for the decompression stage
-        self.received_compressed_packet = {}
-
-        # Received payload for the decompression stage
-        self.received_payload = b""
-
-        # Fields sizes in bits
         self.field_size = {
             "IP_version": 4,
             "IP_trafficClass": 8,
@@ -47,9 +37,22 @@ class Compressor:
             "CoAP_messageID": 16,
             "CoAP_token": 8
         }
+        # Auxiliarys to order the options for every rule
+        self.options_order = {}
+        self.repeatable_options = 3
+        self.options_index = ["CoAP_If-Match", "CoAP_Uri-Host", "CoAP_ETag", "CoAP_If-None-Match", "CoAP_Uri-Port",
+                              "CoAP_Location-Path", "CoAP_Uri-Path", "CoAP_Content-Format", "CoAP_Max-Age", "CoAP_Uri-Query",
+                              "CoAP_Accept", "CoAP_Location-Query", "CoAP_Proxy-Uri", "CoAP_Proxy-Scheme", "CoAP_Sizel"]
 
     def addRule(self, rule):
+        index = len(self.context)
         self.context.append(rule)
+        self.options_order[index] = obtain_options_order(
+            rule, self.options_index, self.repeatable_options)
+
+#########################################################################
+##############    Here Starts The Compression Functions    ##############
+#########################################################################
 
     def loadFromParser(self, parsedHeaderFields, coap_header_options, payload):
         self.parsedHeaderFields = parsedHeaderFields
@@ -81,7 +84,7 @@ class Compressor:
             "CoAP_token": ""
         }
 
-        # Auxiliary list to order the dictionary
+        # Auxiliar list to order the dictionary
         self.header_order = ["IP_version", "IP_trafficClass", "IP_flowLabel",
                              "IP_payloadLength", "IP_nextHeader", "IP_hopLimit", "IP_prefixES", "IP_iidES",
                              "IP_prefixLA", "IP_iidLA", "UDP_PortES", "UDP_PortLA",
@@ -106,17 +109,13 @@ class Compressor:
             for field_name, field_content in rule.items():
                 '''print("\t\t\tfield %s :" % field_name)'''
 
-                # reg = search(
-                #    '(.*)\s(.*)', field_name)
-                # if reg:
-                #    cleanName = reg.group(1)
-                #    index = reg.group(2)
-
                 matched = False
 
+                if field_content["direction"] == "dw":
+                    break
+
                 # It is checked which is the "matchingOperator" for that field
-                # Possible "matchingOperators" are: equal | ignore | MSB(*)
-                # |(match-mapping is not considered yet)
+
                 if field_content["matchingOperator"] == "equal":
                     '''print("\t\t\t\t%s context value is %s and received value is %s..." % (
                         field_name, field_content["targetValue"], self.parsedHeaderFields[field_name]))'''
@@ -164,7 +163,9 @@ class Compressor:
 
                     # ctx_bin will have the "targetValue" of the rule field in
                     # binary representation
-                    ctx_bin = bin(int(field_content["targetValue"], 16))[2:]
+
+                    ctx_bin = field_content["targetValue"]
+                    #ctx_bin = bin(int(field_content["targetValue"], 16))[2:]
 
                     # rcv_bin will have the value of the recieved packet field
                     # in binary representation
@@ -175,13 +176,13 @@ class Compressor:
                     # length of the "tagetValue"
                     ctx_nbz = self.field_size[field_name] - len(ctx_bin)
                     # ctx_bin is filled with zeros for the diference in size
-                    ctx_bin = self.zfill(ctx_bin, ctx_nbz)
+                    ctx_bin = zfill(ctx_bin, ctx_nbz)
 
                     # rcv_nbz will be the size of the field name minus the
                     # length of the received field value
                     rcv_nbz = self.field_size[field_name] - len(rcv_bin)
                     # rcv_bin is filled with zeros for the diference in size
-                    rcv_bin = self.zfill(rcv_bin, rcv_nbz)
+                    rcv_bin = zfill(rcv_bin, rcv_nbz)
 
                     # Here it is checked if the MSB of the "targetValue" and
                     # the value of the recieved packet field are the same
@@ -194,8 +195,12 @@ class Compressor:
                 if matched == False:
                     break
 
+            # It is checked that every field received has an appropriate
+            # compression
             for field_name, field_value in fieldsMatchCheck.items():
                 if field_value != True:
+                    # print(
+                    #    "\n\t\tNo compression for", field_name, "field in this rule.")
                     matched = False
                     break
 
@@ -230,7 +235,6 @@ class Compressor:
                 reg = search(
                     'LSB\((.*)\)', self.context[self.rule_found_id][field_name]["compDecompFct"])
                 if reg:
-
                     # group(1) returns the first parenthesized subgroup
                     lsb = int(reg.group(1))
 
@@ -239,13 +243,13 @@ class Compressor:
                     rcv_bin = bin(
                         int(self.parsedHeaderFields[field_name], 16))[2:]
 
-                    # rcv_nbz calculates the difference in length between the
-                    # field size and the received field value
+                    # rcv_nbz calculates the difference between the
+                    # field size and the received value length (in bits)
                     rcv_nbz = self.field_size[
                         field_name] - len((rcv_bin))
 
                     # rcv_bin is then completed with rcv_nbz zeros
-                    rcv_bin = self.zfill(rcv_bin, rcv_nbz)
+                    rcv_bin = zfill(rcv_bin, rcv_nbz)
 
                     # The LSB bits from rcv_bin to be send are separeted
                     # The rcv_bin bits are selected from (field_size - lsb) to
@@ -253,16 +257,9 @@ class Compressor:
                     rcv_bin = rcv_bin[
                         self.field_size[field_name] - lsb:self.field_size[field_name]]
 
-                    # Binary to byte format
-                    lsb_value = int(rcv_bin, 2)
-                    length = (bit_length(lsb_value) + 7) // 8
-                    lsb_value = lsb_value.to_bytes(length)
-                    lsb_value = hexlify(lsb_value)
-                    self.compressed_header_fields[
-                        field_name] = self.complete_field_zeros(lsb_value, lsb)
-                    # print("\t\t\t\t%d lsb of %s are sent to the server, value is %s" % (
-                    # lsb, field_name,
-                    # self.compressed_header_fields[field_name]))
+                    # Save it as binary, so that it can be then appended in a
+                    # compressed packet
+                    self.compressed_header_fields[field_name] = rcv_bin
 
                 reg = search(
                     'mapping-sent\((.*)\)', self.context[self.rule_found_id][field_name]["compDecompFct"])
@@ -271,8 +268,11 @@ class Compressor:
 
                     for mapping_id, mapping_value in self.context[self.rule_found_id][field_name]["targetValue"].items():
                         if mapping_value == self.parsedHeaderFields[field_name]:
-                            self.compressed_header_fields[
-                                field_name] = mapping_id
+                            # Save it as binary
+                            rcv_bin = bin(int(mapping_id, 16))[2:]
+                            rcv_nbz = lsb = int(reg.group(1)) - len(rcv_bin)
+                            rcv_bin = zfill(rcv_bin, rcv_nbz)
+                            self.compressed_header_fields[field_name] = rcv_bin
                             break
 
                 # It is checked if the "compDecompFct" of the field contains
@@ -282,14 +282,24 @@ class Compressor:
                     # If an option_value is sent, the length is added as a
                     # first byte to the data
                     data = self.parsedHeaderFields[field_name]
-                    # Order is the field index number
+                    # ALL OPTION SENT
+                    # Order is the field order number
                     if(order >= 20):
-                        option_length = int(len(
-                            self.parsedHeaderFields[field_name]) / 2)
-                        data = b"".join(
-                            [hexlify(bytes([option_length]))[1:], data])
+                        option_length = int(
+                            len(self.parsedHeaderFields[field_name]) / 2)
 
-                    self.compressed_header_fields[field_name] = data
+                        # Save it as binary (options)
+                        rcv_bin = bin(int(data, 16))[2:]
+                        rcv_nbz = option_length * 8 - len(rcv_bin)
+
+                    else:
+                        # Save it as binary (not-option)
+                        rcv_bin = bin(int(data, 16))[2:]
+                        rcv_nbz = self.field_size[field_name] - len(rcv_bin)
+
+                    rcv_bin = zfill(rcv_bin, rcv_nbz)
+                    self.compressed_header_fields[field_name] = rcv_bin
+
                     '''print("\t\t\t\tfield content of %s is sent to the server, value is %s" % (
                         field_name, self.compressed_header_fields[field_name]))'''
 
@@ -310,79 +320,83 @@ class Compressor:
         else:
             print("\t\tNo rule found, the packet is dropped.")
 
-    def receiveCompressedPacket(self, received_compressed_packet, payload):
-        self.received_compressed_packet = received_compressed_packet
-        self.received_payload = payload
-
-    def printContext(self):
-        i = 0
-        for rule in self.context:
-            print("\t\trule %d :" % i)
-            i += 1
-            for field_name, field_content in rule.items():
-                print("\t\t\tfield %s :" % field_name)
-                for field_desc_name, field_desc_content in field_content.items():
-                    print("\t\t\t\t %s : %s" %
-                          (field_desc_name, field_desc_content))
-
-    def printReceivedPacket(self):
-        for field_name, field_content in self.parsedHeaderFields.items():
-            print("\t\t\t%s : %s" % (field_name, field_content))
-
-    def printSentPacket(self):
-        for field_name, field_content in self.compressed_header_fields.items():
-            self.compressed_header_fields.items()
-
     # For now minimum size for each field is a nibble (should be changed)
     def appendCompressedPacket(self):
         self.compressed_packet = self.compressed_header_fields["rule"]
+        auxBuffer = ""
 
         # self.header_order is used to assure the header packet is formed in
         # the right order since the dictionaries order is not fixed
         for field_name in self.header_order:
-            if type(self.compressed_header_fields[field_name]) == bytes:
-                self.compressed_packet = b"".join(
-                    [self.compressed_packet, self.compressed_header_fields[field_name]])
+            # ACA juntar string binaria -> pasar a bytes -> unir regla con
+            # header fields y payload
+            tipo = type(self.compressed_header_fields[field_name])
+            if tipo != bytes:
+                auxBuffer = auxBuffer + \
+                    self.compressed_header_fields[field_name]
+
+        # Data is arranged to be sent in nibbles
+        while len(auxBuffer) >= 4:
+            one_nibble = auxBuffer[0:4]
+            one_nibble = int(one_nibble, 2)
+            one_nibble = hexlify(bytes([one_nibble]))[1:]
+            self.compressed_packet = b"".join(
+                [self.compressed_packet, one_nibble])
+            auxBuffer = auxBuffer[4:]
+
+        if len(auxBuffer) > 0:
+            one_nibble = zfill(auxBuffer, 4 - len(auxBuffer))
+            one_nibble = int(one_nibble, 2)
+            one_nibble = hexlify(bytes([one_nibble]))[1:]
+            self.compressed_packet = b"".join(
+                [self.compressed_packet, one_nibble])
+
+        # Data is sent in bytes, so there should be an even quantity of nibbles
+        # An extra zero is added if necessary
+        if len(self.compressed_packet) % 2 != 0:
+            self.compressed_packet = b"".join(
+                [self.compressed_packet, b"0"])
 
         self.compressed_packet = b"".join(
             [self.compressed_packet, self.payload])
 
-    # Computes the UDP checksum for the decompressor
-    def checksum(self, msg):
-        # msg includes the pseudo-header for UDP, the UDP header and the UDP
-        # payload.
+#########################################################################
+##############             Auxiliary Functions             ##############
+#########################################################################
 
-        # If the length of msg is not even a zero byte is added
-        if len(msg) % 2 == 1:
-            msg += [0]
-        s = 0
-        # Loop taking 2 bytes at a time (16 bits)
-        for i in range(0, len(msg), 2):
-            w = msg[i + 1] + (msg[i] << 8)  # Primer bit es el mas grande
-            s = s + w
-        while s > 0xffff:
-            s = (s >> 16) + (s & 0xffff)
-        # Complement and mask to 2 bytes (dont know for what is this last part)
-        s = ~s & 0xffff
-        return s
+# This function fills strtofill with nbz zeros at the the MSBs
 
-    # This function fills strtofill with nbz zeros at the the MSBs
-    def zfill(self, strtofill, nbz):
-        filledstr = strtofill
-        for i in range(nbz):
-            filledstr = "0" + filledstr
-        return filledstr
 
-    # Completes the field with zeros up to its size
-    def complete_field_zeros(self, field, field_length):
-        nibbles = int(field_length / 4)
-        while(len(field) < nibbles):
-            field = b"".join([b"0", field])
-        while(len(field) > nibbles):
-            field = field[1:]
-        return field
+def zfill(strtofill, nbz):
+    filledstr = strtofill
+    for i in range(nbz):
+        filledstr = "0" + filledstr
+    return filledstr
 
-def bit_length(s):
-    s = bin(s)       # binary representation:  bin(-37) --> '-0b100101'
-    s = s.lstrip('-0b')  # remove leading zeros and minus sign
-    return len(s)
+
+def obtain_options_order(rule, options_index, repeatable_options):
+    options_order = []
+    for field_name in rule:
+        for k in range(0, len(options_index), 1):
+            re = options_index[k] + "\\s(\\d*)"  # ,"\\s\(\\d*\)"
+            reg = search(re, field_name)
+            if (reg):
+                options_order.append(
+                    [field_name, k * repeatable_options + int(reg.group(1)) - 1])
+    # options_order.sort(function(a, b){return a[1]-b[1]});
+    sorted(options_order, key=itemgetter(1))
+    for k in range(0, len(options_order), 1):
+        options_order[k] = options_order[k][0]
+    return options_order
+
+
+def itemgetter(*items):
+    if len(items) == 1:
+        item = items[0]
+
+        def g(obj):
+            return obj[item]
+    else:
+        def g(obj):
+            return tuple(obj[item] for item in items)
+    return g
