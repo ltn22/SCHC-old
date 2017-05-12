@@ -1,0 +1,179 @@
+/**
+ * Created by Philippe Clavier on 26/04/2017.
+ */
+
+var option_names = {
+    1: "CoAP_If-Match",
+    3: "CoAP_Uri-Host",
+    4: "CoAP_ETag",
+    5: "CoAP_If-None-Match",
+    6: "CoAP_Observe",
+    7: "CoAP_Uri-Port",
+    8: "CoAP_Location-Path",
+    11: "CoAP_Uri-Path",
+    12: "CoAP_Content-Format",
+    14: "CoAP_Max-Age",
+    15: "CoAP_Uri-Query",
+    17: "CoAP_Accept",
+    20: "CoAP_Location-Query",
+    23: "CoAP_Block2",
+    27: "CoAP_Block1",
+    28: "CoAP_Size2",
+    35: "CoAP_Proxy-Uri",
+    39: "CoAP_Proxy-Scheme",
+    60: "CoAP_Sizel",
+    258: "CoAP_No-Response"
+};
+
+var cdf = function(array){
+    this.array = array;
+};
+
+cdf.prototype.parse = function(packet){
+    this.header_fields = {};
+    this.payload = "";
+    this.sepacketHexaContent = packet;
+
+    // The complete trame content in printed
+    /*console.log("\n\t\tTrame content (hexa): %s" % this.sepacketHexaContent)*/
+
+    // The "IP_version" field is pulled apart
+    this.header_fields["IP_version"] = this.sepacketHexaContent.slice(0,1);
+    /*console.log("\n\t\t\tIP version (decimal): %d" %
+    int(this.header_fields["IP_version"], 16))*/
+
+    // The "IP_trafficClass" field is pulled apart
+    this.header_fields["IP_trafficClass"] = this.sepacketHexaContent.slice(1,3);
+    /*console.log("\t\t\tIP Traffic Class (hexa): %s" %
+    this.header_fields["IP_trafficClass"])*/
+
+    // The "IP_flowLabel" field is pulled apart
+    this.header_fields["IP_flowLabel"] = this.sepacketHexaContent.slice(3,8);
+    /*console.log("\t\t\tIP Flow Label (hexa): %s" %
+    this.header_fields["IP_flowLabel"])*/
+
+    // The "IP_payloadLength" field is pulled apart
+    this.header_fields["IP_payloadLength"] = this.sepacketHexaContent.slice(8,12);
+    /*console.log("\t\t\tIP Payload Length (decimal): %d" %
+    int(this.header_fields["IP_payloadLength"], 16))*/
+
+    // The "IP_nextHeader" field is pulled apart
+    this.header_fields["IP_nextHeader"] = this.sepacketHexaContent.slice(12,14);
+    /*console.log("\t\t\tIP Next Header (decimal): %d" %
+    int(this.header_fields["IP_nextHeader"], 16))*/
+
+    // The "IP_hopLimit" field is pulled apart
+    this.header_fields["IP_hopLimit"] = this.sepacketHexaContent.slice(14,16);
+    /*console.log("\t\t\tIP Hop Limit (decimal): %d" %
+    int(this.header_fields["IP_hopLimit"], 16))*/
+
+    // The "IP_prefixES" field is pulled apart
+    this.header_fields[
+        "IP_prefixES"] = this.sepacketHexaContent.slice(16,32);
+    /*console.log("\t\t\tIP ES Prefix (hexa): %s" %
+    this.header_fields["IP_prefixES"])*/
+
+    // The "IP_iidES" field is pulled apart
+    this.header_fields[
+        "IP_iidES"] = this.sepacketHexaContent.slice(32,48);
+    /*console.log("\t\t\tIP ED IID (hexa): %s" %
+    this.header_fields["IP_iidES"])*/
+
+    // The "IP_prefixLA" field is pulled apart
+    this.header_fields["IP_prefixLA"] = this.sepacketHexaContent.slice(48,64);
+    /*console.log("\t\t\tIP LA Prefix (hexa): %s" %
+    this.header_fields["IP_prefixLA"])*/
+
+    // The "IP_iidLA" field is pulled apart
+    this.header_fields["IP_iidLA"] = this.sepacketHexaContent.slice(64,80);
+    /*console.log("\t\t\tIP LA IID (hexa): %s" %
+    this.header_fields["IP_iidLA"])*/
+
+    // The "UDP_PortES" field is pulled apart
+    this.header_fields["UDP_PortES"] = this.sepacketHexaContent.slice(80,84);
+    /*console.log("\t\t\tUDP ES Port (decimal): %d" %
+    int(this.header_fields["UDP_PortES"], 16))*/
+
+    // The "UDP_PortLA" field is pulled apart
+    this.header_fields["UDP_PortLA"] = this.sepacketHexaContent.slice(84,88);
+    /*console.log("\t\t\tUDP LA Port (decimal): %d" %
+    int(this.header_fields["UDP_PortLA"], 16))*/
+
+    // The "UDP_length" field is pulled apart
+    this.header_fields["UDP_length"] = this.sepacketHexaContent.slice(88,92);
+    /*console.log("\t\t\tUDP Length (decimal): %d" %
+    int(this.header_fields["UDP_length"], 16))*/
+
+    // The "UDP_checksum" field is pulled apart
+    this.header_fields["UDP_checksum"] = this.sepacketHexaContent.slice(92,96);
+    /*console.log("\t\t\tUDP Checksum (hexa): %s" %
+    this.header_fields["UDP_checksum"])*/
+
+    var coap_version_type = this.sepacketHexaContent.slice(96,97);
+
+    this.header_fields["CoAP_version"] =(parseInt(coap_version_type) >> 2).toString();
+    /*console.log("\t\t\tCoAP version (decimal): %d" %
+    int(this.header_fields["CoAP_version_bin"], 2))*/
+
+    this.header_fields["CoAP_type"] = (parseInt(coap_version_type) & 3).toString();
+    /*console.log("\t\t\tCoAP Type (decimal): %d" %
+    int(this.header_fields["CoAP_type_bin"], 2))*/
+
+    this.header_fields["CoAP_tokenLength"] = this.sepacketHexaContent.slice(97,98);
+    /*console.log("\t\t\tCoAP Token Length (decimal): %d" %
+    int(this.header_fields["CoAP_tokenLength"], 16))*/
+    var token_length = parseInt(this.sepacketHexaContent.slice(97,98));
+
+    this.header_fields["CoAP_code"] = this.sepacketHexaContent.slice(98,100);
+    /*console.log("\t\t\tCoAP Code (decimal): %d" %
+    int(this.header_fields["CoAP_code"], 16))*/
+
+    this.header_fields["CoAP_messageID"] = this.sepacketHexaContent.slice(100,104);
+    /*console.log("\t\t\tCoAP MessageID (decimal): %d" %
+    int(this.header_fields["CoAP_messageID"], 16))*/
+
+    this.header_fields["CoAP_token"] = this.sepacketHexaContent.slice(104,104 + token_length * 2);
+    /*console.log("\t\t\tCoAP Token (decimal): %d" %
+    int(this.header_fields["CoAP_token"], 16))*/
+
+    var start = 104 + token_length * 2;
+    var end = start + 1;
+    var option_number = 0;
+    this.coap_header_options = [];
+
+    while((this.sepacketHexaContent).slice(start,end+1) !== "ff" && end <= (this.sepacketHexaContent).length){
+        //console.log("Here options are parsed in the appropriate way")
+        if (option_number > 60){
+            console.log("error when parsing coap options");
+            break;
+        }
+        var option_position = 1;
+        var option_delta = parseInt((this.sepacketHexaContent).slice(start,end), 16);
+        option_number += option_delta;
+        start += 1;
+        end += 1;
+        var option_length = parseInt((this.sepacketHexaContent).slice(start,end), 16);
+        if (option_length !== 0){
+            start += 1;
+            end += option_length * 2;
+            var option_value = (this.sepacketHexaContent).slice(start-2,end); // Include delta+length (-2)
+            if (option_delta === 0){
+                option_position += 1;
+            }
+            var option_name = option_names[option_number] + " " + option_position.toString();
+            this.header_fields[option_name] = option_value;
+            this.coap_header_options.push(option_name); // REVISAR
+            start += option_length * 2;
+            end += 1;
+        }
+        else{
+            start += 1;
+            end += 1;
+        }
+    }
+    if((this.sepacketHexaContent).slice(start,end+1) === "ff"){
+        this.payload = (this.sepacketHexaContent).slice(end + 1);
+    }
+};
+
+module.exports = exports = cdf;
