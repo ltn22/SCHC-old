@@ -205,10 +205,6 @@ The folder *“javascript\test”* contains a script called *“testing.js”* t
 
 The folder *“javascript\examples”* contains a script called *“decompression_server.js”* which shows how a server could be set up and use the module to decompress the packets received.
 
-# Limitation
-
-For the moment the compressor does not support downlink communication. Tackling this limitation is the next steps in making a fully functional implementation of the SCHC for LoRAWAN.
-
 # Appendix - Rule Format
 
 An example of a rule format is shown. All fields should be included in a rule for a propper compression/decompression. Note that this example of rule is for Javascript where the "targetValue" of each field is a string, for the Python code the "targetValue" should be expressed in bytes literals (b' ').
