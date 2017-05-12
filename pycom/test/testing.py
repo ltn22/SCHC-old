@@ -217,9 +217,9 @@ while True:
         lora_buffer = unhexlify(compressor.compressed_packet)
         print("\t##############################")
 
-    # Decompress packet
-    decompressor.parseCompressedPacket(compressor.compressed_packet)
-    decompressor.loadIIDs(b"70b3d549925aa619", b"ada4dae3ac12676b")
-    decompressor.decompressHeader()
+        # Decompress packet
+        decompressor.parseCompressedPacket(compressor.compressed_packet)
+        decompressor.loadIIDs(b"70b3d549925aa619", b"ada4dae3ac12676b")
+        decompressor.decompressHeader()
 
     time.sleep(5)
